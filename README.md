@@ -24,6 +24,11 @@ To run the program:
     cd CGV-Project
     ```
 
+2. Navigate into the public folder:
+    ```bash
+    cd public
+    ```
+
 2. Start the local program:
     ```bash
     npx vite
