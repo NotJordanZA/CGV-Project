@@ -101,6 +101,11 @@ function setupLevel(level) {
     flashLight.color.setHex(levelConfig.flashLightColor);
     flashLightBounce.color.setHex(levelConfig.flashLightBounceColor);
     flashLight.intensity = levelConfig.flashLightPower;
+
+    //Reset cube and camera
+    cube.position.set(0,0,0);
+    camera.position.set(40, 40, 40); // Adjust these for the desired view
+    camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 }
 
 // Function to move to the next level
@@ -127,6 +132,19 @@ plane.rotation.x = -Math.PI / 2;
 plane.position.y = -10;
 plane.receiveShadow = true; // This will receive the shadows
 scene.add(plane);
+
+// Create additional planes with identical properties
+// var plane2 = new THREE.Mesh(planeGeometry, planeMaterial.clone()); // Clone the material
+// plane2.rotation.x = -Math.PI / 2;
+// plane2.position.set(0, -10, -100); // Position the second plane 100 units behind the original
+// plane2.receiveShadow = true; // This will receive the shadows
+// scene.add(plane2);
+
+// var plane3 = new THREE.Mesh(planeGeometry, planeMaterial.clone()); // Clone the material again
+// plane3.rotation.x = -Math.PI / 2;
+// plane3.position.set(0, -10, -200); // Position the third plane 200 units behind the original
+// plane3.receiveShadow = true; // This will receive the shadows
+// scene.add(plane3);
 
 // Cube setup
 var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
@@ -185,6 +203,12 @@ window.addEventListener('mousemove', function(event) {
     }
 });
 
+// Cube and movement settings
+const cubeSize = 10; // Assuming the cube is 10x10x10
+const halfCubeSize = cubeSize / 2;
+// var movementRaycaster = new THREE.Raycaster();
+// var rayDirection = new THREE.Vector3(0, -1, 0);
+
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case 'w': moveForward = true; break;
@@ -202,6 +226,194 @@ window.addEventListener('keyup', function(event) {
         case 'd': moveRight = false; break;
     }
 });
+
+// Create a raycaster instance
+// var movementRaycaster = new THREE.Raycaster();
+// var rayDirection = new THREE.Vector3();
+
+// function updatePlayerPosition() {
+//     const moveDistance = moveSpeed; // Set the movement distance for each key press
+//     let proposedPosition = new THREE.Vector3(); // To store the next proposed position
+
+//     // Raycast forward (negative z direction)
+//     if (moveForward) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(0, 0, -moveDistance));
+//         rayDirection.set(0, -1, 0); // Raycast downward to check the ground
+//         movementRaycaster.set(proposedPosition, rayDirection);
+
+//         const intersects = movementRaycaster.intersectObject(plane);
+//         if (intersects.length > 0) {
+//             cube.position.copy(proposedPosition); // Move if there's an intersection with the ground
+//             camera.position.z -= moveSpeed;
+//         }
+//     }
+//     // Raycast backward (positive z direction)
+//     if (moveBackward) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(0, 0, moveDistance));
+//         rayDirection.set(0, -1, 0);
+//         movementRaycaster.set(proposedPosition, rayDirection);
+
+//         const intersects = movementRaycaster.intersectObject(plane);
+//         if (intersects.length > 0) {
+//             cube.position.copy(proposedPosition);
+//             camera.position.z += moveSpeed;
+//         }
+//     }
+//     // Raycast left (negative x direction)
+//     if (moveLeft) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(-moveDistance, 0, 0));
+//         rayDirection.set(0, -1, 0);
+//         movementRaycaster.set(proposedPosition, rayDirection);
+
+//         const intersects = movementRaycaster.intersectObject(plane);
+//         if (intersects.length > 0) {
+//             cube.position.copy(proposedPosition);
+//             camera.position.x -= moveSpeed;
+//         }
+//     }
+//     // Raycast right (positive x direction)
+//     if (moveRight) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(moveDistance, 0, 0));
+//         rayDirection.set(0, -1, 0);
+//         movementRaycaster.set(proposedPosition, rayDirection);
+
+//         const intersects = movementRaycaster.intersectObject(plane);
+//         if (intersects.length > 0) {
+//             cube.position.copy(proposedPosition);
+//             camera.position.x += moveSpeed;
+//         }
+//     }
+// }
+
+// Create the downward raycaster object (for checking if the cube remains on the plane)
+// var downwardRaycaster = new THREE.Raycaster();
+// var downDirection = new THREE.Vector3(0, -1, 0); // Ray pointing down (towards the plane)
+
+// // Function to check if the cube is still on the plane by casting a ray downward
+// function isCubeOnPlane(cube) {
+//     // Set raycaster position to the cube's position and cast downward
+//     downwardRaycaster.set(cube.position, downDirection);
+
+//     // Check for intersections with the plane
+//     const intersects = downwardRaycaster.intersectObject(plane);
+
+//     // Return true if an intersection with the plane is found (the cube is on the plane)
+//     return intersects.length > 0;
+// }
+
+// function updatePlayerPosition() {
+//     const moveDistance = moveSpeed; // Set the movement distance for each key press
+//     let proposedPosition = new THREE.Vector3(); // To store the next proposed position
+
+//     // Move forward (negative z direction)
+//     if (moveForward) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(0, 0, -moveDistance));
+//         cube.position.copy(proposedPosition);
+
+//         // If the cube is not on the plane after the move, undo the movement
+//         if (!isCubeOnPlane(cube)) {
+//             cube.position.z += moveDistance; // Revert the position
+//         } else {
+//             camera.position.z -= moveSpeed;
+//         }
+//     }
+//     // Move backward (positive z direction)
+//     if (moveBackward) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(0, 0, moveDistance));
+//         cube.position.copy(proposedPosition);
+
+//         if (!isCubeOnPlane(cube)) {
+//             cube.position.z -= moveDistance; // Revert the position
+//         } else {
+//             camera.position.z += moveSpeed;
+//         }
+//     }
+//     // Move left (negative x direction)
+//     if (moveLeft) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(-moveDistance, 0, 0));
+//         cube.position.copy(proposedPosition);
+
+//         if (!isCubeOnPlane(cube)) {
+//             cube.position.x += moveDistance; // Revert the position
+//         } else {
+//             camera.position.x -= moveSpeed;
+//         }
+//     }
+//     // Move right (positive x direction)
+//     if (moveRight) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(moveDistance, 0, 0));
+//         cube.position.copy(proposedPosition);
+
+//         if (!isCubeOnPlane(cube)) {
+//             cube.position.x -= moveDistance; // Revert the position
+//         } else {
+//             camera.position.x += moveSpeed;
+//         }
+//     }
+// }
+
+// function updatePlayerPosition() {
+//     const moveDistance = moveSpeed; // Set the movement distance for each key press
+//     let proposedPosition = new THREE.Vector3(); // To store the next proposed position
+
+//     // Helper function to check for intersection
+//     function canMoveToPosition(newPosition) {
+//         // Array to store the cube's corner positions for raycasting
+//         const cubeCorners = [
+//             new THREE.Vector3(newPosition.x + halfCubeSize, newPosition.y, newPosition.z + halfCubeSize),
+//             new THREE.Vector3(newPosition.x + halfCubeSize, newPosition.y, newPosition.z - halfCubeSize),
+//             new THREE.Vector3(newPosition.x - halfCubeSize, newPosition.y, newPosition.z + halfCubeSize),
+//             new THREE.Vector3(newPosition.x - halfCubeSize, newPosition.y, newPosition.z - halfCubeSize),
+//         ];
+    
+//         // Check if all four corners of the cube intersect the plane
+//         for (let i = 0; i < cubeCorners.length; i++) {
+//             const corner = cubeCorners[i];
+//             movementRaycaster.set(corner.clone().setY(corner.y + 5), rayDirection); // Ray starts slightly above the cube corner
+//             const intersects = movementRaycaster.intersectObject(plane); // Check intersection with the plane
+    
+//             if (intersects.length === 0) {
+//                 // If any corner doesn't intersect the plane, movement isn't allowed
+//                 return false;
+//             }
+//         }
+        
+//         return true; // All corners intersected the plane, movement is allowed
+//     }
+
+//     // Move forward (negative z direction)
+//     if (moveForward) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(0, 0, -moveDistance));
+//         if (canMoveToPosition(proposedPosition)) {
+//             cube.position.copy(proposedPosition);
+//             camera.position.z -= moveSpeed;
+//         }
+//     }
+//     // Move backward (positive z direction)
+//     if (moveBackward) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(0, 0, moveDistance));
+//         if (canMoveToPosition(proposedPosition)) {
+//             cube.position.copy(proposedPosition);
+//             camera.position.z += moveSpeed;
+//         }
+//     }
+//     // Move left (negative x direction)
+//     if (moveLeft) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(-moveDistance, 0, 0));
+//         if (canMoveToPosition(proposedPosition)) {
+//             cube.position.copy(proposedPosition);
+//             camera.position.x -= moveSpeed;
+//         }
+//     }
+//     // Move right (positive x direction)
+//     if (moveRight) {
+//         proposedPosition.copy(cube.position).add(new THREE.Vector3(moveDistance, 0, 0));
+//         if (canMoveToPosition(proposedPosition)) {
+//             cube.position.copy(proposedPosition);
+//             camera.position.x += moveSpeed;
+//         }
+//     }
+// }
 
 function updatePlayerPosition() {
     if (moveForward) {
@@ -222,22 +434,35 @@ function updatePlayerPosition() {
     }
 }
 
+// Listen for level-related keypress events
+window.addEventListener('keydown', function(event) {
+    switch(event.key) {
+      case '1':
+        setupLevel(0);
+        break;
+      case '2':
+        setupLevel(1);
+        break;
+      case '3':
+        setupLevel(2);
+        break;
+      default:
+        console.log('Invalid key. Press 1, 2, or 3 to select a level.');
+    }
+  });
+
 function render() {
     updatePlayerPosition();
 
     // Check if player moves forward past z = -50 (Next level)
-    if (cube.position.z < -50 && currentLevel < levels.length - 1) {
-        nextLevel(); // Move to the next level
-        cube.position.z = 50; // Reset the cube position for the new level
-        camera.position.z = 40; // Reset the camera position
-    }
+2
 
     // Check if player moves backward past z = 50 (Previous level)
-    if (cube.position.z > 50 && currentLevel > 0) {
-        previousLevel(); // Move to the previous level
-        cube.position.z = -50; // Reset the cube position for the previous level
-        camera.position.z = 40; // Reset the camera position
-    }
+    // if (cube.position.z > 50 && currentLevel > 0) {
+    //     previousLevel(); // Move to the previous level
+    //     cube.position.z = -50; // Reset the cube position for the previous level
+    //     camera.position.z = 40; // Reset the camera position
+    // }
 
     requestAnimationFrame(render);
     renderer.render(scene, camera);
