@@ -23,23 +23,35 @@ let currentLevel = 0; // Start at level 0
 const levels = [
     {
         levelNumber: 1,
-        groundTexture: './assets/cobblestone/diffuse.png',
+        groundTexture: './assets/cobblestone/diffusered.png',
+        groundNormal: './assets/cobblestone/normal.png',
+        groundHeight: './assets/cobblestone/height.png',
+        groundSpecular: './assets/cobblestone/specular.png',
         cubeColor: 0x0095DD,
-        flashLightColor: 0xffe394, // Flashlight color for level 1
+        flashLightColor: 0xff8a8a, // Flashlight color for level 1
+        flashLightBounceColor: 0xff8a8a,
         flashLightPower: 5000,
     },
     {
         levelNumber: 2,
         groundTexture: './assets/cobblestone/diffuse.png',
+        groundNormal: './assets/cobblestone/normal.png',
+        groundHeight: './assets/cobblestone/height.png',
+        groundSpecular: './assets/cobblestone/specular.png',
         cubeColor: 0xFFD700,
         flashLightColor: 0x808080, // Flashlight color for level 2
+        flashLightBounceColor: 0x808080,
         flashLightPower: 7000,
     },
     {
         levelNumber: 3,
         groundTexture: './assets/cobblestone/diffuse.png',
+        groundNormal: './assets/cobblestone/normal.png',
+        groundHeight: './assets/cobblestone/height.png',
+        groundSpecular: './assets/cobblestone/specular.png',
         cubeColor: 0xADD8E6, // Light blue for Heaven
         flashLightColor: 0xADD8E6, // Flashlight color for level 3
+        flashLightBounceColor: 0xADD8E6,
         flashLightPower: 10000,
     },
 ];
@@ -47,7 +59,6 @@ const levels = [
 // Function to setup levels
 function setupLevel(level) {
     const levelConfig = levels[level];
-
     // Load the ground texture for this level
     const textureLoader = new THREE.TextureLoader();
     const diffuseTexture = textureLoader.load(levelConfig.groundTexture, (texture) => {
@@ -56,8 +67,31 @@ function setupLevel(level) {
         texture.repeat.set(4, 4);
     });
 
+    const heightTexture = textureLoader.load(levelConfig.groundHeight, (texture) => {
+        // Set texture wrapping and repeat for height
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 4); // Tile 4 times across the plane
+    });
+    const normalTexture = textureLoader.load(levelConfig.groundNormal, (texture) => {
+        // Set texture wrapping and repeat for normal
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 4); // Tile 4 times across the plane
+    });
+    const specularTexture = textureLoader.load(levelConfig.groundSpecular, (texture) => {
+        // Set texture wrapping and repeat for specular
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 4); // Tile 4 times across the plane
+    });
+
     // Update the plane material for this level
     planeMaterial.map = diffuseTexture;
+    planeMaterial.normalMap = normalTexture;
+    planeMaterial.displacementMap = heightTexture;
+    planeMaterial.specularMap = specularTexture;
+    planeMaterial.displacementScale= 4;
     planeMaterial.needsUpdate = true;
 
     // Update the cube color for this level
@@ -65,6 +99,7 @@ function setupLevel(level) {
 
     // Update flashlight color and power for this level
     flashLight.color.setHex(levelConfig.flashLightColor);
+    flashLightBounce.color.setHex(levelConfig.flashLightBounceColor);
     flashLight.intensity = levelConfig.flashLightPower;
 }
 
@@ -85,8 +120,8 @@ function previousLevel() {
 }
 
 // Ground (Plane) setup
-var planeGeometry = new THREE.PlaneGeometry(100, 100);
-var planeMaterial = new THREE.MeshStandardMaterial();
+var planeGeometry = new THREE.PlaneGeometry(100, 100, 150, 150);
+var planeMaterial = new THREE.MeshPhongMaterial();
 var plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = -Math.PI / 2;
 plane.position.y = -10;
