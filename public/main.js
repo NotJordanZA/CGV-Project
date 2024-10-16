@@ -1,5 +1,9 @@
 import * as THREE from 'three';
+import { level1Config } from './level1.js';
+import { level2Config } from './level2.js';
+import { level3Config } from './level3.js';
 
+// Set up the canvas and renderer
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
 
@@ -20,41 +24,7 @@ camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 
 // Level Configurations
 let currentLevel = 0; // Start at level 0
-const levels = [
-    {
-        levelNumber: 1,
-        groundTexture: './assets/cobblestone/diffusered.png',
-        groundNormal: './assets/cobblestone/normal.png',
-        groundHeight: './assets/cobblestone/height.png',
-        groundSpecular: './assets/cobblestone/specular.png',
-        cubeColor: 0x0095DD,
-        flashLightColor: 0xff8a8a, // Flashlight color for level 1
-        flashLightBounceColor: 0xff8a8a,
-        flashLightPower: 5000,
-    },
-    {
-        levelNumber: 2,
-        groundTexture: './assets/cobblestone/diffuse.png',
-        groundNormal: './assets/cobblestone/normal.png',
-        groundHeight: './assets/cobblestone/height.png',
-        groundSpecular: './assets/cobblestone/specular.png',
-        cubeColor: 0xFFD700,
-        flashLightColor: 0x808080, // Flashlight color for level 2
-        flashLightBounceColor: 0x808080,
-        flashLightPower: 7000,
-    },
-    {
-        levelNumber: 3,
-        groundTexture: './assets/cobblestone/diffuse.png',
-        groundNormal: './assets/cobblestone/normal.png',
-        groundHeight: './assets/cobblestone/height.png',
-        groundSpecular: './assets/cobblestone/specular.png',
-        cubeColor: 0xADD8E6, // Light blue for Heaven
-        flashLightColor: 0xADD8E6, // Flashlight color for level 3
-        flashLightBounceColor: 0xADD8E6,
-        flashLightPower: 10000,
-    },
-];
+const levels = [level1Config, level2Config, level3Config];
 
 // Function to setup levels
 function setupLevel(level) {
@@ -68,19 +38,16 @@ function setupLevel(level) {
     });
 
     const heightTexture = textureLoader.load(levelConfig.groundHeight, (texture) => {
-        // Set texture wrapping and repeat for height
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(4, 4); // Tile 4 times across the plane
     });
     const normalTexture = textureLoader.load(levelConfig.groundNormal, (texture) => {
-        // Set texture wrapping and repeat for normal
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(4, 4); // Tile 4 times across the plane
     });
     const specularTexture = textureLoader.load(levelConfig.groundSpecular, (texture) => {
-        // Set texture wrapping and repeat for specular
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(4, 4); // Tile 4 times across the plane
@@ -91,7 +58,7 @@ function setupLevel(level) {
     planeMaterial.normalMap = normalTexture;
     planeMaterial.displacementMap = heightTexture;
     planeMaterial.specularMap = specularTexture;
-    planeMaterial.displacementScale= 4;
+    planeMaterial.displacementScale = 4;
     planeMaterial.needsUpdate = true;
 
     // Update the cube color for this level
@@ -103,19 +70,13 @@ function setupLevel(level) {
     flashLight.intensity = levelConfig.flashLightPower;
 }
 
-// Function to move to the next level
-function nextLevel() {
-    if (currentLevel < levels.length - 1) {
-        currentLevel++;
+// Function to move to the specified level
+function goToLevel(level) {
+    if (level >= 0 && level < levels.length) {
+        currentLevel = level;
         setupLevel(currentLevel);
-    }
-}
-
-// Function to move to the previous level
-function previousLevel() {
-    if (currentLevel > 0) {
-        currentLevel--;
-        setupLevel(currentLevel);
+        cube.position.set(0, 0, 0); // Reset the cube position for the new level
+        camera.position.set(40, 40, 40); // Reset the camera position
     }
 }
 
@@ -187,6 +148,9 @@ window.addEventListener('mousemove', function(event) {
 
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
+        case '1': goToLevel(0); break; // Move to Level 1
+        case '2': goToLevel(1); break; // Move to Level 2
+        case '3': goToLevel(2); break; // Move to Level 3
         case 'w': moveForward = true; break;
         case 's': moveBackward = true; break;
         case 'a': moveLeft = true; break;
@@ -226,17 +190,19 @@ function render() {
     updatePlayerPosition();
 
     // Check if player moves forward past z = -50 (Next level)
-    if (cube.position.z < -50 && currentLevel < levels.length - 1) {
-        nextLevel(); // Move to the next level
-        cube.position.z = 50; // Reset the cube position for the new level
-        camera.position.z = 40; // Reset the camera position
+    if (cube.position.z < -50) {
+        if (currentLevel < levels.length - 1) {
+            goToLevel(currentLevel + 1); // Move to the next level
+        }
+        cube.position.z = 0; // Reset the cube position
     }
 
     // Check if player moves backward past z = 50 (Previous level)
-    if (cube.position.z > 50 && currentLevel > 0) {
-        previousLevel(); // Move to the previous level
-        cube.position.z = -50; // Reset the cube position for the previous level
-        camera.position.z = 40; // Reset the camera position
+    if (cube.position.z > 50) {
+        if (currentLevel > 0) {
+            goToLevel(currentLevel - 1); // Move to the previous level
+        }
+        cube.position.z = 0; // Reset the cube position
     }
 
     requestAnimationFrame(render);
