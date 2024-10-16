@@ -17,8 +17,16 @@ var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 100
 // Position the camera for an isometric view (45 degrees)
 camera.position.set(40, 40, 40); // Adjust these for the desired view
 camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
-
+// *** Maze Configuration ***
+const MAZE_SIZE = 15; 
+const CELL_SIZE = 7;  
+const WALL_THICKNESS = 0.8;  // Adjusted thickness for smaller spacing
+const WALL_HEIGHT = 2;
 // Level Configurations
+const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 }); // Black walls
+const pathMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff }); // White paths
+const goalMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red material for the goal
+
 let currentLevel = 0; // Start at level 0
 const levels = [
     {
@@ -55,6 +63,127 @@ const levels = [
         flashLightPower: 10000,
     },
 ];
+
+function generateMaze(width, height) {
+    // Initialize the maze with walls (1)
+    const maze = Array.from({ length: height }, () =>
+        Array(width).fill(1)
+    );
+
+    // Carve paths using recursive backtracking
+    function carve(x, y) {
+        const directions = [
+            [0, 2], [2, 0], [0, -2], [-2, 0]
+        ].sort(() => Math.random() - 0.5); // Shuffle directions
+
+        directions.forEach(([dx, dy]) => {
+            const nx = x + dx;
+            const ny = y + dy;
+
+            if (
+                nx > 1 && ny > 1 &&
+                nx < width - 2 && ny < height - 2 &&
+                maze[ny][nx] === 1 &&
+                Math.random() < 0.7// Adjust path density
+            ) {
+                maze[ny][nx] = 0; // Mark cell as path
+                maze[y + dy / 2][x + dx / 2] = 0; // Clear wall between cells
+                carve(nx, ny); // Recursive call to carve further
+            }
+        });
+    }
+carve(10,8);
+    // Ensure all outer borders are filled with walls
+    for (let i = 1; i < height-1; i++) {
+        maze[i][0] = 0; // Left border
+        maze[i][width - 1] = 1; // Right border
+    }
+    for (let j = 1; j < width-1; j++) {
+        maze[0][j] = 1; // Top border
+        maze[height - 1][j] = 1; // Bottom border
+    }
+
+    // Open the entrance and exit points
+  
+    maze[height - 2][width - 1] = 0; // Exit at the right edge
+
+    return maze;
+}
+
+// Create L-Shaped Wall
+function createLShapedWall(x, z) {
+    const segment1 = new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS);
+    const segment2 = new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS);
+
+    const wall1 = new THREE.Mesh(segment1, wallMaterial);
+    const wall2 = new THREE.Mesh(segment2, wallMaterial);
+
+    wall1.position.set(x, WALL_HEIGHT / 2, z);
+    wall2.position.set(x + CELL_SIZE / 2, WALL_HEIGHT / 2, z + CELL_SIZE / 2);
+    wall2.rotation.y = Math.PI / 2;
+
+    scene.add(wall1);
+    scene.add(wall2);
+}
+
+// Create Straight Wall
+function createWall(x, z) {
+    const geometry = new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS);
+    const wall = new THREE.Mesh(geometry, wallMaterial);
+    wall.position.set(x, WALL_HEIGHT / 2, z);
+    scene.add(wall);
+}
+
+// Build Maze with Random Bends
+function createMaze(mazeData) {
+    const mazeOffsetX = -(MAZE_SIZE * CELL_SIZE) / 2+2;
+    const mazeOffsetZ = -(MAZE_SIZE * CELL_SIZE) / 2;
+
+    mazeData.forEach((row, z) => {
+        row.forEach((cell, x) => {
+            const posX = x * CELL_SIZE + mazeOffsetX;
+            const posZ = z * CELL_SIZE + mazeOffsetZ;
+
+            if (cell === 1) {
+                const isBend = Math.random() < 0.4; // 40% chance to create L-bend
+                if (isBend) {
+                    createLShapedWall(posX, posZ);
+                } else {
+                    createWall(posX, posZ);
+                }
+            }
+        });
+    });
+
+    createEntrance(mazeOffsetX, mazeOffsetZ);
+    createGoal(mazeOffsetX, mazeOffsetZ);
+}
+
+// Entrance
+function createEntrance(offsetX, offsetZ) {
+    const entrance = new THREE.Mesh(
+        new THREE.BoxGeometry(CELL_SIZE, 2, CELL_SIZE),
+        pathMaterial
+    );
+    entrance.position.set(offsetX, 1, CELL_SIZE + offsetZ); // Fixed at (0, 1)
+    scene.add(entrance);
+}
+
+// Goal (Exit)
+function createGoal(offsetX, offsetZ) {
+    const goal = new THREE.Mesh(
+        new THREE.BoxGeometry(CELL_SIZE, 2, CELL_SIZE),
+        goalMaterial
+    );
+    goal.position.set((MAZE_SIZE - 2) * CELL_SIZE + offsetX, 1, (MAZE_SIZE - 2) * CELL_SIZE + offsetZ);
+    scene.add(goal);
+}
+
+// Setup and Render the Scene
+function setupMaze() {
+    const mazeData = generateMaze(MAZE_SIZE, MAZE_SIZE);
+    createMaze(mazeData);
+}
 
 // Function to setup levels
 function setupLevel(level) {
@@ -101,6 +230,8 @@ function setupLevel(level) {
     flashLight.color.setHex(levelConfig.flashLightColor);
     flashLightBounce.color.setHex(levelConfig.flashLightBounceColor);
     flashLight.intensity = levelConfig.flashLightPower;
+    const mazeData = generateMaze(MAZE_SIZE, MAZE_SIZE);
+    createMaze(mazeData);
 }
 
 // Function to move to the next level
@@ -245,4 +376,16 @@ function render() {
 
 // Initial level setup
 setupLevel(currentLevel);
+setupMaze();
 render();
+
+
+
+
+
+
+
+
+
+
+
