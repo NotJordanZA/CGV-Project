@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
@@ -11,7 +12,7 @@ document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
 
 var aspect = WIDTH / HEIGHT;
-var d = 50; // Frustum size (affects the zoom level)
+var d = 100; // Frustum size (affects the zoom level) (50)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
 
 // Position the camera for an isometric view (45 degrees)
@@ -132,6 +133,19 @@ plane.rotation.x = -Math.PI / 2;
 plane.position.y = -10;
 plane.receiveShadow = true; // This will receive the shadows
 scene.add(plane);
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.load('./assets/inferno/cgv-inferno-map.glb', (gltf) => {
+    // Add the loaded model to the scene
+    const model = gltf.scene;
+
+    // Position the model to the right of the plane
+    model.scale.set(50,50,50);
+    model.position.set(0, -10, 0); // Adjust the position as needed
+    scene.add(model);
+}, undefined, (error) => {
+    console.error('An error happened while loading the model:', error);
+});
 
 // Create additional planes with identical properties
 // var plane2 = new THREE.Mesh(planeGeometry, planeMaterial.clone()); // Clone the material
