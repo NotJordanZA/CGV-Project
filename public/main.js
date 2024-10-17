@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { level1Config } from './level1.js';
 import { level2Config } from './level2.js';
 import { level3Config } from './level3.js';
@@ -25,6 +26,8 @@ camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 // Level Configurations
 let currentLevel = 0; // Start at level 0
 const levels = [level1Config, level2Config, level3Config];
+
+let atChest = false;
 
 // Function to setup levels
 function setupLevel(level) {
@@ -89,6 +92,25 @@ plane.position.y = -10;
 plane.receiveShadow = true; // This will receive the shadows
 scene.add(plane);
 
+let model;
+
+if (currentLevel == 0) {
+    const gltfLoader = new GLTFLoader();
+    var manager = new THREE.LoadingManager();
+    gltfLoader.load('./assets/inferno/cgv-inferno-map.glb', (gltf) => {
+        // Add the loaded model to the scene
+        model = gltf.scene;
+        
+        // Position the model to the right of the plane
+        model.rotation.y = -Math.PI / 2;
+        model.scale.set(30,30,30);
+        model.position.set(0, -10, 0); // Adjust the position as needed
+        scene.add(model);
+    }, undefined, (error) => {
+        console.error('An error happened while loading the model:', error);
+    });
+}
+
 // Cube setup
 var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
 var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
@@ -121,7 +143,7 @@ var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
-var moveSpeed = 0.5;
+var moveSpeed = 0.75;
 var flashLightDistance = 10;
 
 window.addEventListener('mousemove', function(event) {
@@ -129,7 +151,14 @@ window.addEventListener('mousemove', function(event) {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(plane);
+    let intersects;
+    if (currentLevel > 0){
+        intersects = raycaster.intersectObject(plane);
+    }
+    else {
+        intersects = raycaster.intersectObject(model);
+    }
+    
     
     if (intersects.length > 0) {
         const point = intersects[0].point;
@@ -146,6 +175,44 @@ window.addEventListener('mousemove', function(event) {
     }
 });
 
+// 261,0,-100
+// 78,0,-440
+// 200,0,136
+// -225,0,200
+// -400,0,-77
+
+
+function checkAtChest() {
+    if (currentLevel == 0) {
+        var x = cube.position.x;
+        var y = cube.position.y;
+        var z = cube.position.z;
+        if (x >= 240 && x <= 270 && z >= -110 && z <= -90){
+            atChest = true;
+            console.log(atChest);
+        }
+        else if (x >= 180 && x <= 210 && z >= 125 && z <= 145){
+            atChest = true;
+            console.log(atChest);
+        }
+        else if (x >= 70 && x <= 90 && z >= -440 && z <= -410){
+            atChest = true;
+            console.log(atChest);
+        }
+        else if (x >= -235 && x <= -210 && z >= 180 && z <= 215){
+            atChest = true;
+            console.log(atChest);
+        }
+        else if (x >= -415 && x <= -390 && z >= -80 && z <= -60){
+            atChest = true;
+            console.log(atChest);
+        }
+        else {
+            atChest = false;
+        }
+    }
+}
+
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1': goToLevel(0); break; // Move to Level 1
@@ -155,6 +222,7 @@ window.addEventListener('keydown', function(event) {
         case 's': moveBackward = true; break;
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
+        case 'p': console.log(cube.position); break;
     }
 });
 
@@ -171,18 +239,22 @@ function updatePlayerPosition() {
     if (moveForward) {
         cube.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
+        checkAtChest();
     } 
     if (moveBackward) {
         cube.position.z += moveSpeed;
         camera.position.z += moveSpeed;
+        checkAtChest();
     } 
     if (moveLeft) {
         cube.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
+        checkAtChest();
     } 
     if (moveRight) {
         cube.position.x += moveSpeed;
         camera.position.x += moveSpeed;
+        checkAtChest();
     }
 }
 
@@ -190,20 +262,20 @@ function render() {
     updatePlayerPosition();
 
     // Check if player moves forward past z = -50 (Next level)
-    if (cube.position.z < -50) {
-        if (currentLevel < levels.length - 1) {
-            goToLevel(currentLevel + 1); // Move to the next level
-        }
-        cube.position.z = 0; // Reset the cube position
-    }
+    // if (cube.position.z < -50) {
+    //     if (currentLevel < levels.length - 1) {
+    //         goToLevel(currentLevel + 1); // Move to the next level
+    //     }
+    //     cube.position.z = 0; // Reset the cube position
+    // }
 
     // Check if player moves backward past z = 50 (Previous level)
-    if (cube.position.z > 50) {
-        if (currentLevel > 0) {
-            goToLevel(currentLevel - 1); // Move to the previous level
-        }
-        cube.position.z = 0; // Reset the cube position
-    }
+    // if (cube.position.z > 50) {
+    //     if (currentLevel > 0) {
+    //         goToLevel(currentLevel - 1); // Move to the previous level
+    //     }
+    //     cube.position.z = 0; // Reset the cube position
+    // }
 
     requestAnimationFrame(render);
     renderer.render(scene, camera);
