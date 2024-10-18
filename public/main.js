@@ -16,7 +16,7 @@ document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
 
 var aspect = WIDTH / HEIGHT;
-var d = 50; // Frustum size (affects the zoom level)
+var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
 
 // Position the camera for an isometric view (45 degrees)
@@ -90,25 +90,60 @@ var plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = -Math.PI / 2;
 plane.position.y = -10;
 plane.receiveShadow = true; // This will receive the shadows
-scene.add(plane);
+if (currentLevel !== 0){
+    scene.add(plane);
+}
 
 let model;
+let model2;
+
+// 127,15,733
+// 336,15,230
+// 435,15,-172
+// -672,15,-134
+// -375,150,336
 
 if (currentLevel == 0) {
+    scene.background = new THREE.Color( 0x000000 );
     const gltfLoader = new GLTFLoader();
-    var manager = new THREE.LoadingManager();
-    gltfLoader.load('./assets/inferno/cgv-inferno-map.glb', (gltf) => {
+    gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
         // Add the loaded model to the scene
         model = gltf.scene;
         
         // Position the model to the right of the plane
         model.rotation.y = -Math.PI / 2;
-        model.scale.set(30,30,30);
+        model.scale.set(50,50,50);
         model.position.set(0, -10, 0); // Adjust the position as needed
         scene.add(model);
     }, undefined, (error) => {
         console.error('An error happened while loading the model:', error);
     });
+    gltfLoader.load('./assets/inferno/cgv-inferno-map-chests.glb', (gltf) => {
+        // Add the loaded model to the scene
+        model2 = gltf.scene;
+        // Position the model to the right of the plane
+        model2.rotation.y = -Math.PI / 2;
+        model2.scale.set(50,50,50);
+        model2.position.set(0, -10, 0); // Adjust the position as needed
+        scene.add(model2);
+    }, undefined, (error) => {
+        console.error('An error happened while loading the model:', error);
+    });
+    var chestLight1 = new THREE.PointLight(0xf76628, 1000);
+    chestLight1.position.set(127,15,733);
+    var chestLight2 = new THREE.PointLight(0xf76628, 1000);
+    chestLight2.position.set(336,15,230);
+    var chestLight3 = new THREE.PointLight(0xf76628, 1000);
+    chestLight3.position.set(435,15,-172);
+    var chestLight4 = new THREE.PointLight(0xf76628, 1000);
+    chestLight4.position.set(-672,15,-134);
+    var chestLight5 = new THREE.PointLight(0xf76628, 1000);
+    chestLight5.position.set(-375,150,336);
+    scene.add(chestLight1);
+    scene.add(chestLight2);
+    scene.add(chestLight3);
+    scene.add(chestLight4);
+    scene.add(chestLight5);
 }
 
 // Cube setup
@@ -119,9 +154,12 @@ cube.rotation.set(0.0, 0.0, 0);
 cube.translateX(0);
 scene.add(cube);
 
-// Flashlight setup
+// Flashlight setupas
 var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
 var flashHolder = new THREE.Mesh(flashGeometry, phongMaterial);
+
+var flashTimeout = 5000;
+var bounceTimeout = 100;
 
 var flashLight = new THREE.SpotLight(0xffe394, 5000, 0, Math.PI / 4, 1, 2);
 flashLight.position.set(0, 0, 0); // Position it at the cube's location
@@ -187,28 +225,38 @@ function checkAtChest() {
         var x = cube.position.x;
         var y = cube.position.y;
         var z = cube.position.z;
-        if (x >= 240 && x <= 270 && z >= -110 && z <= -90){
-            atChest = true;
-            console.log(atChest);
+        if (x >= 400 && x <= 450 && z >= -183 && z <= -150){
+            // atChest = true;
+            // console.log(atChest);
+            flashTimeout = 5000;
+            bounceTimeout = 100;
         }
-        else if (x >= 180 && x <= 210 && z >= 125 && z <= 145){
-            atChest = true;
-            console.log(atChest);
+        else if (x >= 300 && x <= 350 && z >= 208 && z <= 242){
+            // atChest = true;
+            // console.log(atChest);
+            flashTimeout = 5000;
+            bounceTimeout = 100;
         }
-        else if (x >= 70 && x <= 90 && z >= -440 && z <= -410){
-            atChest = true;
-            console.log(atChest);
+        else if (x >= 117 && x <= 150 && z >= -733 && z <= -683){
+            // atChest = true;
+            // console.log(atChest);
+            flashTimeout = 5000;
+            bounceTimeout = 100;
         }
-        else if (x >= -235 && x <= -210 && z >= 180 && z <= 215){
-            atChest = true;
-            console.log(atChest);
+        else if (x >= -392 && x <= -350 && z >= 300 && z <= 358){
+            // atChest = true;
+            // console.log(atChest);
+            flashTimeout = 5000;
+            bounceTimeout = 100;
         }
-        else if (x >= -415 && x <= -390 && z >= -80 && z <= -60){
-            atChest = true;
-            console.log(atChest);
+        else if (x >= -692 && x <= -650 && z >= -133 && z <= -100){
+            // atChest = true;
+            // console.log(atChest);
+            flashTimeout = 5000;
+            bounceTimeout = 100;
         }
         else {
-            atChest = false;
+            // atChest = false;
         }
     }
 }
@@ -258,9 +306,44 @@ function updatePlayerPosition() {
     }
 }
 
+var flickerTimeout = 0;
+
 function render() {
     updatePlayerPosition();
 
+    if (flashTimeout > 100) {
+        if (flickerTimeout === 0 && Math.random() < 0.006){
+            flickerTimeout = 30;
+        }
+        flashTimeout -= 0.9;
+        bounceTimeout -= 0.00018;
+    }
+    if (flickerTimeout > 0){
+        flickerTimeout -= 1;
+        switch (flickerTimeout){
+            case 25:
+                flashLight.intensity = 5000;
+                flashLightBounce.intensity = 100;
+            break;
+            case 15:
+                flashLight.intensity = 1;
+                flashLightBounce.intensity = 1;
+            break;
+            case 5:
+                flashLight.intensity = 5000;
+                flashLightBounce.intensity = 100;
+            break;
+            case 1:
+                flashLight.intensity = 1;
+                flashLightBounce.intensity = 1;
+            break;
+        }
+    }
+    else {
+        flashLight.intensity = flashTimeout;
+        flashLightBounce.intensity = bounceTimeout;
+    }
+    
     // Check if player moves forward past z = -50 (Next level)
     // if (cube.position.z < -50) {
     //     if (currentLevel < levels.length - 1) {
