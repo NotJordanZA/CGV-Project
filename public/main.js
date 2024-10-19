@@ -26,8 +26,42 @@ camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 // Level Configurations
 let currentLevel = 0; // Start at level 0
 const levels = [level1Config, level2Config, level3Config];
-
+let initialCubePosition = new THREE.Vector3(0, 0, 0);
+let initialCameraPosition = new THREE.Vector3(40, 40, 40);
 let atChest = false;
+
+const vignette = document.getElementById('vignette');
+const gameOverMessage = document.getElementById('game-over-message');
+
+
+// Update the vignette intensity based on darknessTimeout
+function updateVignetteIntensity(intensity) {
+    vignette.style.opacity = intensity; // Set opacity between 0 and 1
+}
+
+function showGameOverScreen() {
+    gameOverMessage.style.opacity = 1; // Fade in the "You Died" message
+}
+
+function resetLevel() {
+    // Reset cube position
+    cube.position.copy(initialCubePosition);
+    
+    // Reset camera position
+    camera.position.copy(initialCameraPosition);
+    camera.lookAt(0, 0, 0);  // Make sure camera is looking at the correct point
+    flashTimeout = 5000;
+    bounceTimeout = 100;
+    darknessTimeout = 100;
+    gameOverMessage.style.opacity = 0;
+
+    // Reset vignette opacity to 0 (no vignette)
+    vignette.style.opacity = 0;
+
+    // Optional: Reset any other elements such as lights, textures, etc.
+    setupLevel(currentLevel); // Reapply the level configurations
+    console.log("Level reset to its original configuration.");
+}
 
 // Function to setup levels
 function setupLevel(level) {
@@ -213,45 +247,28 @@ window.addEventListener('mousemove', function(event) {
     }
 });
 
-// 261,0,-100
-// 78,0,-440
-// 200,0,136
-// -225,0,200
-// -400,0,-77
-
-
 function checkAtChest() {
     if (currentLevel == 0) {
         var x = cube.position.x;
         var y = cube.position.y;
         var z = cube.position.z;
         if (x >= 400 && x <= 450 && z >= -183 && z <= -150){
-            // atChest = true;
-            // console.log(atChest);
             flashTimeout = 5000;
             bounceTimeout = 100;
         }
         else if (x >= 300 && x <= 350 && z >= 208 && z <= 242){
-            // atChest = true;
-            // console.log(atChest);
             flashTimeout = 5000;
             bounceTimeout = 100;
         }
         else if (x >= 117 && x <= 150 && z >= -733 && z <= -683){
-            // atChest = true;
-            // console.log(atChest);
             flashTimeout = 5000;
             bounceTimeout = 100;
         }
         else if (x >= -392 && x <= -350 && z >= 300 && z <= 358){
-            // atChest = true;
-            // console.log(atChest);
             flashTimeout = 5000;
             bounceTimeout = 100;
         }
         else if (x >= -692 && x <= -650 && z >= -133 && z <= -100){
-            // atChest = true;
-            // console.log(atChest);
             flashTimeout = 5000;
             bounceTimeout = 100;
         }
@@ -260,7 +277,7 @@ function checkAtChest() {
         }
     }
 }
-
+var darknessTimeout = 100;
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1': goToLevel(0); break; // Move to Level 1
@@ -271,6 +288,9 @@ window.addEventListener('keydown', function(event) {
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'p': console.log(cube.position); break;
+        case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
+        case 'r': resetLevel(); break;
+        case 'x': flashTimeout = 99; darknessTimeout=10; break;
     }
 });
 
@@ -306,17 +326,26 @@ function updatePlayerPosition() {
     }
 }
 
+// Update resolution on window resize
+window.addEventListener('resize', function() {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
 var flickerTimeout = 0;
+var resetLevelTimeout = 10;
 
 function render() {
     updatePlayerPosition();
 
     if (flashTimeout > 100) {
+        darknessTimeout = 100;
         if (flickerTimeout === 0 && Math.random() < 0.006){
             flickerTimeout = 30;
         }
         flashTimeout -= 0.9;
         bounceTimeout -= 0.00018;
+    }else{
+        darknessTimeout -= 0.1;
     }
     if (flickerTimeout > 0){
         flickerTimeout -= 1;
@@ -343,22 +372,21 @@ function render() {
         flashLight.intensity = flashTimeout;
         flashLightBounce.intensity = bounceTimeout;
     }
-    
-    // Check if player moves forward past z = -50 (Next level)
-    // if (cube.position.z < -50) {
-    //     if (currentLevel < levels.length - 1) {
-    //         goToLevel(currentLevel + 1); // Move to the next level
-    //     }
-    //     cube.position.z = 0; // Reset the cube position
-    // }
 
-    // Check if player moves backward past z = 50 (Previous level)
-    // if (cube.position.z > 50) {
-    //     if (currentLevel > 0) {
-    //         goToLevel(currentLevel - 1); // Move to the previous level
-    //     }
-    //     cube.position.z = 0; // Reset the cube position
-    // }
+
+    if (darknessTimeout <= 0) {
+        showGameOverScreen();
+        flashTimeout = 0;
+        bounceTimeout = 0;
+        resetLevelTimeout -= 0.03;
+    }
+
+    if(resetLevelTimeout <= 0){
+        resetLevelTimeout = 10;
+        resetLevel();
+    }
+    const vignetteIntensity = THREE.MathUtils.clamp(1 - (darknessTimeout / 100), 0, 1);
+    updateVignetteIntensity(vignetteIntensity);
 
     requestAnimationFrame(render);
     renderer.render(scene, camera);
