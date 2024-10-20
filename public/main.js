@@ -12,7 +12,6 @@ var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor(0xDDDDDD, 1);
 document.body.appendChild(renderer.domElement);
-
 var scene = new THREE.Scene();
 
 var aspect = WIDTH / HEIGHT;
@@ -130,6 +129,8 @@ if (currentLevel !== 0){
 
 let infernoMap;
 let infernoChests;
+let infernoWalls;
+let infernoWallsBoundingBox;
 
 // 127,15,733
 // 336,15,230
@@ -164,12 +165,21 @@ if (currentLevel == 0) {
     }, undefined, (error) => {
         console.error('An error happened while loading the infernoMap:', error);
     });
+    gltfLoader.load('./assets/inferno/cgv-inferno-map-walls.glb', (gltf) => {
+        infernoWalls = gltf.scene;
+        infernoWalls.rotation.y = -Math.PI / 2;
+        infernoWalls.scale.set(50,50,50);
+        infernoWalls.position.set(6, -10, 6); // Adjust the position as needed
+        infernoWallsBoundingBox = new THREE.Box3().setFromObject(infernoWalls);
+    }, undefined, (error) => {
+        console.error('An error happened while loading the infernoMap:', error);
+    });
     var chestLight1 = new THREE.PointLight(0xf76628, 1000);
-    chestLight1.position.set(127,15,733);
+    chestLight1.position.set(127,15,-733);
     var chestLight2 = new THREE.PointLight(0xf76628, 1000);
     chestLight2.position.set(336,15,230);
     var chestLight3 = new THREE.PointLight(0xf76628, 1000);
-    chestLight3.position.set(435,15,-172);
+    chestLight3.position.set(435,15,-172);d
     var chestLight4 = new THREE.PointLight(0xf76628, 1000);
     chestLight4.position.set(-672,15,-134);
     var chestLight5 = new THREE.PointLight(0xf76628, 1000);
@@ -248,36 +258,6 @@ window.addEventListener('mousemove', function(event) {
     }
 });
 
-function checkAtChest() {
-    if (currentLevel == 0) {
-        var x = cube.position.x;
-        var y = cube.position.y;
-        var z = cube.position.z;
-        if (x >= 400 && x <= 450 && z >= -183 && z <= -150){
-            flashTimeout = 5000;
-            bounceTimeout = 100;
-        }
-        else if (x >= 300 && x <= 350 && z >= 208 && z <= 242){
-            flashTimeout = 5000;
-            bounceTimeout = 100;
-        }
-        else if (x >= 117 && x <= 150 && z >= -733 && z <= -683){
-            flashTimeout = 5000;
-            bounceTimeout = 100;
-        }
-        else if (x >= -392 && x <= -350 && z >= 300 && z <= 358){
-            flashTimeout = 5000;
-            bounceTimeout = 100;
-        }
-        else if (x >= -692 && x <= -650 && z >= -133 && z <= -100){
-            flashTimeout = 5000;
-            bounceTimeout = 100;
-        }
-        else {
-            // atChest = false;
-        }
-    }
-}
 var darknessTimeout = 100;
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
@@ -306,19 +286,14 @@ window.addEventListener('keyup', function(event) {
 
 var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
 var chestsBoundingBoxes = [];
+var wallsBoundingBoxes = [];
 
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
     // Update player's bounding box
     cubeBoundingBox.setFromObject(cube);
 
-    // Update the floor bounding box (if infernoMap is loaded)
-    // if (infernoMap) {
-    //     floorBoundingBox = new THREE.Box3().setFromObject(infernoMap);
-    // }
-
-    // Update the bounding boxes of each chest (if infernoChests is loaded)
-    if (infernoChests) {
+    if (infernoChests && chestsBoundingBoxes.length < 1000) {
         infernoChests.traverse((child) => {
             if (child.isMesh) {
                 const chestBoundingBox = new THREE.Box3().setFromObject(child);
@@ -326,10 +301,18 @@ function updateBoundingBoxes() {
             }
         });
     }
-}
 
+    if (infernoWalls) {
+        infernoWalls.traverse((child) => {
+            if (child.isMesh) {
+                const wallBoundingBox = new THREE.Box3().setFromObject(child);
+                wallsBoundingBoxes.push(wallBoundingBox);
+            }
+        });
+    }
+}
 // Check for collision with the chests
-function checkChestCollisions() {
+function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
         if (cubeBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
             var x = cube.position.x;
@@ -340,6 +323,22 @@ function checkChestCollisions() {
             }
             flashTimeout = 5000;
             bounceTimeout = 100;
+            return true; // Collision detected
+        }
+    }
+    return false; // No collision
+}
+
+// Check for collision with the invisible walls
+function checkInvisibleWallsCollisions() {
+    for(let i = 0; i< wallsBoundingBoxes.length; i++){
+        if (cubeBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
+            var x = cube.position.x;
+            var y = cube.position.y;
+            var z = cube.position.z;
+            if(x<=30 && x>=-30 && z<=30 && z>=-30){
+                return false;
+            }
             return true; // Collision detected
         }
     }
@@ -371,7 +370,7 @@ function handleCollisions(direction) {
 
     // Check if the player has collided with the floor or a chest
     // if (!floorBoundingBox.intersectsBox(cubeBoundingBox) || checkChestCollisions()) {
-    if (checkChestCollisions()) {
+    if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
         // If collided, revert to the previous position
         console.log("I ams stuck");
         cube.position.copy(oldCubePosition);
