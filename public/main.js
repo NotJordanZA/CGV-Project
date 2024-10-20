@@ -253,35 +253,6 @@ window.addEventListener('mousemove', function(event) {
     flashLightTarget.position.y = 2;
 });
 
-// window.addEventListener('mousemove', function(event) {
-//     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-//     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-//     raycaster.setFromCamera(mouse, camera);
-//     let intersects;
-//     if (currentLevel > 0){
-//         intersects = raycaster.intersectObject(plane);
-//     }
-//     else {
-//         intersects = raycaster.intersectObject(infernoMap);
-//     }
-    
-    
-//     if (intersects.length > 0) {
-//         const point = intersects[0].point;
-//         flashLightTarget.position.copy(point);
-
-//         var dx = point.x - cube.position.x;
-//         var dz = point.z - cube.position.z;
-
-//         var angleRadians = Math.atan2(dz, dx);
-
-//         flashHolder.position.x = flashLightDistance * Math.cos(angleRadians);
-//         flashHolder.position.z = flashLightDistance * Math.sin(angleRadians);
-//         flashHolder.position.y = 2;
-//     }
-// });
-
 var darknessTimeout = 100;
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
@@ -326,7 +297,7 @@ function updateBoundingBoxes() {
         });
     }
 
-    if (infernoWalls) {
+    if (infernoWalls && wallsBoundingBoxes.length < 5000) {
         infernoWalls.traverse((child) => {
             if (child.isMesh) {
                 const wallBoundingBox = new THREE.Box3().setFromObject(child);
