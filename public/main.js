@@ -13,7 +13,7 @@ let currentLevel = 0;
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1': 
-            currentLevel = 0; 
+            currentLevel = 0;
             render1();
         break; // Move to Level 1
         case '2': 
@@ -28,13 +28,16 @@ window.addEventListener('keydown', function(event) {
 });
 
 switch(currentLevel) {
-    case '0': 
+    case 0: 
         render1();
+        console.log(1);
     break; // Move to Level 1
-    case '1': 
+    case 1: 
         render2();
+        console.log(2);
     break; // Move to Level 2
-    case '2': 
+    case 2: 
         render3();
+        console.log(3);
     break; // Move to Level 3
 }

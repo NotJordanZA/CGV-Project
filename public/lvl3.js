@@ -354,9 +354,6 @@ window.addEventListener('mousemove', function(event) {
 // EVENT LISTENER FOR KEY PRESSES
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
-        case '1': goToLevel(0); break; // Move to Level 1
-        case '2': goToLevel(1); break; // Move to Level 2
-        case '3': goToLevel(2); break; // Move to Level 3
         case 'w': moveForward = true; break;
         case 's': moveBackward = true; break;
         case 'a': moveLeft = true; break;
