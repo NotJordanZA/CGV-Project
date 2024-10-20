@@ -121,7 +121,7 @@ gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
     infernoMap.scale.set(50,50,50);
     infernoMap.position.set(0, -10, 0); // Adjust the position as needed
     scene.add(infernoMap);
-    floorBoundingBox.setFromObject(infernoMap);
+    //floorBoundingBox.setFromObject(infernoMap);
 }, undefined, (error) => {
     console.error('An error happened while loading the infernoMap:', error);
 });

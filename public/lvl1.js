@@ -114,7 +114,7 @@ var wallsBoundingBoxes = [];
 // IMPORT MAP
 const gltfLoader = new GLTFLoader();
 
-gltfLoader.load('./assets/inferno/cgv-inferno-map.glb', (gltf) => {
+gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
     // PLACE THE MAP INTO THE SCENE
     infernoMap = gltf.scene;
     infernoMap.rotation.y = -Math.PI / 2;

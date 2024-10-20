@@ -28,13 +28,13 @@ window.addEventListener('keydown', function(event) {
 });
 
 switch(currentLevel) {
-    case '1': 
+    case '0': 
         render1();
     break; // Move to Level 1
-    case '2': 
+    case '1': 
         render2();
     break; // Move to Level 2
-    case '3': 
+    case '2': 
         render3();
     break; // Move to Level 3
 }
