@@ -1,4 +1,7 @@
 // levels/level1.js
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
 export const level1Config = {
     levelNumber: 1,
     groundTexture: './assets/cobblestone/diffusered.png',
