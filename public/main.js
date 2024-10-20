@@ -66,6 +66,7 @@ function resetLevel() {
 // Function to setup levels
 function setupLevel(level) {
     const levelConfig = levels[level];
+
     // Load the ground texture for this level
     const textureLoader = new THREE.TextureLoader();
     const diffuseTexture = textureLoader.load(levelConfig.groundTexture, (texture) => {
@@ -105,7 +106,18 @@ function setupLevel(level) {
     flashLight.color.setHex(levelConfig.flashLightColor);
     flashLightBounce.color.setHex(levelConfig.flashLightBounceColor);
     flashLight.intensity = levelConfig.flashLightPower;
+
+    // Level 3 specific changes
+    if (level === 2) { // Level 3 (array index is 2)
+        // Set up bright ambient light for a bright world
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 2); // Intense white light
+        scene.add(ambientLight);
+
+        // Disable the death mechanic for level 3
+        darknessTimeout = 100; // Reset darkness timeout to prevent game over
+    }
 }
+
 
 // Function to move to the specified level
 function goToLevel(level) {
@@ -405,16 +417,17 @@ var resetLevelTimeout = 10;
 function render() {
     updatePlayerPosition();
     updateBoundingBoxes();
-    if (flashTimeout > 100) {
-        darknessTimeout = 100;
-        if (flickerTimeout === 0 && Math.random() < 0.006){
-            flickerTimeout = 30;
+    if (currentLevel !== 2) { // Disable the death mechanic on level 3
+        if (flashTimeout > 100) {
+            darknessTimeout = 100;
+            if (flickerTimeout === 0 && Math.random() < 0.006){
+                flickerTimeout = 30;
+            }
+            flashTimeout -= 0.9;
+            bounceTimeout -= 0.00018;
+        } else {
+            darknessTimeout -= 0.1;
         }
-        flashTimeout -= 0.9;
-        bounceTimeout -= 0.00018;
-    }else{
-        darknessTimeout -= 0.1;
-    }
     if (flickerTimeout > 0){
         flickerTimeout -= 1;
         switch (flickerTimeout){
@@ -448,6 +461,7 @@ function render() {
         bounceTimeout = 0;
         resetLevelTimeout -= 0.03;
     }
+}
 
     if(resetLevelTimeout <= 0){
         resetLevelTimeout = 10;
