@@ -128,40 +128,41 @@ if (currentLevel !== 0){
     scene.add(plane);
 }
 
-let model;
-let model2;
+let infernoMap;
+let infernoChests;
 
 // 127,15,733
 // 336,15,230
 // 435,15,-172
 // -672,15,-134
-// -375,150,336
-
+// -375,15,336
+var floorBoundingBox = new THREE.Box3();
 if (currentLevel == 0) {
     scene.background = new THREE.Color( 0x000000 );
     const gltfLoader = new GLTFLoader();
     gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
-        // Add the loaded model to the scene
-        model = gltf.scene;
+        // Add the loaded infernoMap to the scene
+        infernoMap = gltf.scene;
         
-        // Position the model to the right of the plane
-        model.rotation.y = -Math.PI / 2;
-        model.scale.set(50,50,50);
-        model.position.set(0, -10, 0); // Adjust the position as needed
-        scene.add(model);
+        // Position the infernoMap to the right of the plane
+        infernoMap.rotation.y = -Math.PI / 2;
+        infernoMap.scale.set(50,50,50);
+        infernoMap.position.set(0, -10, 0); // Adjust the position as needed
+        scene.add(infernoMap);
+        floorBoundingBox.setFromObject(infernoMap);
     }, undefined, (error) => {
-        console.error('An error happened while loading the model:', error);
+        console.error('An error happened while loading the infernoMap:', error);
     });
-    gltfLoader.load('./assets/inferno/cgv-inferno-map-chests.glb', (gltf) => {
-        // Add the loaded model to the scene
-        model2 = gltf.scene;
-        // Position the model to the right of the plane
-        model2.rotation.y = -Math.PI / 2;
-        model2.scale.set(50,50,50);
-        model2.position.set(0, -10, 0); // Adjust the position as needed
-        scene.add(model2);
+    gltfLoader.load('./assets/inferno/cgv-inferno-map-chests-mesh.glb', (gltf) => {
+        // Add the loaded infernoMap to the scene
+        infernoChests = gltf.scene;
+        // Position the infernoMap to the right of the plane
+        infernoChests.rotation.y = -Math.PI / 2;
+        infernoChests.scale.set(50,50,50);
+        infernoChests.position.set(0, -10, 0); // Adjust the position as needed
+        scene.add(infernoChests);
     }, undefined, (error) => {
-        console.error('An error happened while loading the model:', error);
+        console.error('An error happened while loading the infernoMap:', error);
     });
     var chestLight1 = new THREE.PointLight(0xf76628, 1000);
     chestLight1.position.set(127,15,733);
@@ -172,7 +173,7 @@ if (currentLevel == 0) {
     var chestLight4 = new THREE.PointLight(0xf76628, 1000);
     chestLight4.position.set(-672,15,-134);
     var chestLight5 = new THREE.PointLight(0xf76628, 1000);
-    chestLight5.position.set(-375,150,336);
+    chestLight5.position.set(-375,15,315);
     scene.add(chestLight1);
     scene.add(chestLight2);
     scene.add(chestLight3);
@@ -228,7 +229,7 @@ window.addEventListener('mousemove', function(event) {
         intersects = raycaster.intersectObject(plane);
     }
     else {
-        intersects = raycaster.intersectObject(model);
+        intersects = raycaster.intersectObject(infernoMap);
     }
     
     
@@ -303,26 +304,93 @@ window.addEventListener('keyup', function(event) {
     }
 });
 
-function updatePlayerPosition() {
-    if (moveForward) {
+var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
+var chestsBoundingBoxes = [];
+
+// Update bounding boxes in the render loop
+function updateBoundingBoxes() {
+    // Update player's bounding box
+    cubeBoundingBox.setFromObject(cube);
+
+    // Update the floor bounding box (if infernoMap is loaded)
+    // if (infernoMap) {
+    //     floorBoundingBox = new THREE.Box3().setFromObject(infernoMap);
+    // }
+
+    // Update the bounding boxes of each chest (if infernoChests is loaded)
+    if (infernoChests) {
+        infernoChests.traverse((child) => {
+            if (child.isMesh) {
+                const chestBoundingBox = new THREE.Box3().setFromObject(child);
+                chestsBoundingBoxes.push(chestBoundingBox);
+            }
+        });
+    }
+}
+
+// Check for collision with the chests
+function checkChestCollisions() {
+    for (let i = 0; i < chestsBoundingBoxes.length; i++) {
+        if (cubeBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
+            var x = cube.position.x;
+            var y = cube.position.y;
+            var z = cube.position.z;
+            if(x<=30 && x>=-30 && z<=30 && z>=-30){
+                return false;
+            }
+            flashTimeout = 5000;
+            bounceTimeout = 100;
+            return true; // Collision detected
+        }
+    }
+    return false; // No collision
+}
+
+function handleCollisions(direction) {
+    // Store the current position
+    const oldCubePosition = cube.position.clone();
+    const oldCameraPosition = camera.position.clone();
+
+    // Try moving the player in the specified direction
+    if (direction === 'forward') {
         cube.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
-        checkAtChest();
-    } 
-    if (moveBackward) {
+    } else if (direction === 'backward') {
         cube.position.z += moveSpeed;
         camera.position.z += moveSpeed;
-        checkAtChest();
-    } 
-    if (moveLeft) {
+    } else if (direction === 'left') {
         cube.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
-        checkAtChest();
-    } 
-    if (moveRight) {
+    } else if (direction === 'right') {
         cube.position.x += moveSpeed;
         camera.position.x += moveSpeed;
-        checkAtChest();
+    }
+
+    // Update the bounding box after the attempted movement
+    cubeBoundingBox.setFromObject(cube);
+
+    // Check if the player has collided with the floor or a chest
+    // if (!floorBoundingBox.intersectsBox(cubeBoundingBox) || checkChestCollisions()) {
+    if (checkChestCollisions()) {
+        // If collided, revert to the previous position
+        console.log("I ams stuck");
+        cube.position.copy(oldCubePosition);
+        camera.position.copy(oldCameraPosition);
+    }
+}
+
+function updatePlayerPosition() {
+    if (moveForward) {
+        handleCollisions('forward');
+    }
+    if (moveBackward) {
+        handleCollisions('backward');
+    }
+    if (moveLeft) {
+        handleCollisions('left');
+    }
+    if (moveRight) {
+        handleCollisions('right');
     }
 }
 
@@ -336,7 +404,7 @@ var resetLevelTimeout = 10;
 
 function render() {
     updatePlayerPosition();
-
+    updateBoundingBoxes();
     if (flashTimeout > 100) {
         darknessTimeout = 100;
         if (flickerTimeout === 0 && Math.random() < 0.006){
