@@ -388,33 +388,28 @@ var moveRight = false;
 var moveSpeed = 0.75;
 var flashLightDistance = 10;
 
+let previousMouseX = window.innerWidth / 2; // Start in the middle
+let angle = -45;
+const rotationSpeed = 0.006; // Speed of arc rotation
+
 window.addEventListener('mousemove', function(event) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    // Calculate the horizontal mouse movement
+    const mouseX = event.clientX;
+    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
+    const deltaX = wrappedMouseX - previousMouseX;
+    previousMouseX = wrappedMouseX;
 
-    raycaster.setFromCamera(mouse, camera);
-    let intersects;
-    if (currentLevel > 0){
-        intersects = raycaster.intersectObject(plane);
-    }
-    else {
-        intersects = raycaster.intersectObject(infernoMap);
-    }
-    
-    
-    if (intersects.length > 0) {
-        const point = intersects[0].point;
-        flashLightTarget.position.copy(point);
+    // Adjust the angle based on mouse movement
+    angle += deltaX * rotationSpeed;
 
-        var dx = point.x - cube.position.x;
-        var dz = point.z - cube.position.z;
+    // Update the flashHolder position based on the new angle
+    flashHolder.position.x = flashLightDistance * Math.cos(angle);
+    flashHolder.position.z = flashLightDistance * Math.sin(angle);
+    flashHolder.position.y = 2; // Keep the y-position constant or modify as needed
 
-        var angleRadians = Math.atan2(dz, dx);
-
-        flashHolder.position.x = flashLightDistance * Math.cos(angleRadians);
-        flashHolder.position.z = flashLightDistance * Math.sin(angleRadians);
-        flashHolder.position.y = 2;
-    }
+    flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.y = 2;
 });
 
 var darknessTimeout = 100;
