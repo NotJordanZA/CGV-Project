@@ -405,7 +405,7 @@ window.addEventListener('mousemove', function(event) {
     // Update the flashHolder position based on the new angle
     flashHolder.position.x = flashLightDistance * Math.cos(angle);
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; // Keep the y-position constant or modify as needed
+    flashHolder.position.y = 2; 
 
     flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
     flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
@@ -521,8 +521,7 @@ function handleCollisions(direction) {
     // Update the bounding box after the attempted movement
     cubeBoundingBox.setFromObject(cube);
 
-    // Check if the player has collided with the floor or a chest
-    // if (!floorBoundingBox.intersectsBox(cubeBoundingBox) || checkChestCollisions()) {
+    // Check if the player has collided with the wall or a chest
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
         // If collided, revert to the previous position
         // console.log("I ams stuck");
@@ -560,6 +559,8 @@ function render() {
     checkAtChest();
     checkAtItem();
     if(playerItemCount == itemCount){
+        atChest = false;
+        atItem = false;
         goToLevel(1);
     }
     if (atChest || atItem) {
