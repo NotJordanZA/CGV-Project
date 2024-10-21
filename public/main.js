@@ -349,7 +349,7 @@ function removeItem(item){
 var moveTimer = null;
 function displayItemMessage(item) {
     if(item.x === -400 && item.z === -100){
-        itemTextMessage.innerText = "A contract with the following text:\n\"...all earthly possessions and the signatory’s soul enter the sole possession of…\"\nThe rest is illegible"; 
+        itemTextMessage.innerText = "A contract with the following text:\n\"...all earthly possessions and the signatory’s soul enter the sole possession of…\"\nThe rest is illegible."; 
     }else if(item.x === -400 && item.z === 100){
         itemTextMessage.innerText = "Iron chains with a light blue tint.\nThe metal is ice cold and makes me feel empty.\n...were these mine?"; 
     }else if(item.x === 400 && item.z === -600){
