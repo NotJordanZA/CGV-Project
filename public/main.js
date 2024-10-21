@@ -32,9 +32,9 @@ var atItem = false;
 var playerItemCount = 0;
 var itemCount;
 var items = [
-    {x: -400, z: -100},
-    {x: -400, z: 100},
-    {x: 400, z: -600},
+    {x: -884.43, z: -1155.1},
+    {x: -2452.8, z: 123.35},
+    {x: -849, z: 1294.7},
 ];
 
 const vignette = document.getElementById('vignette');
@@ -142,11 +142,9 @@ let infernoChests;
 let infernoWalls;
 let infernoWallsBoundingBox;
 // Chest light positions
-// 127,15,733
-// 336,15,230
-// 435,15,-172
-// -672,15,-134
-// -375,15,336
+// -1562.3, -1204.2,
+// -1400.1, 1438.9,
+// -2496.1, 561.8,
 
 //Item positionxs:
 // -400, 0, -100
@@ -157,7 +155,7 @@ if (currentLevel == 0) {
     itemCount = 3;
     scene.background = new THREE.Color( 0x000000 );
     const gltfLoader = new GLTFLoader();
-    gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
+    gltfLoader.load('./assets/inferno/cgv-purgatory-map-baked-mesh.glb', (gltf) => {
         // Add the loaded infernoMap to the scene
         infernoMap = gltf.scene;
         
@@ -181,7 +179,7 @@ if (currentLevel == 0) {
     }, undefined, (error) => {
         console.error('An error happened while loading the infernoMap:', error);
     });
-    gltfLoader.load('./assets/inferno/cgv-inferno-map-walls.glb', (gltf) => {
+    gltfLoader.load('./assets/inferno/cgv-purgatory-walls.glb', (gltf) => {
         infernoWalls = gltf.scene;
         infernoWalls.rotation.y = -Math.PI / 2;
         infernoWalls.scale.set(50,50,50);
@@ -191,52 +189,48 @@ if (currentLevel == 0) {
         console.error('An error happened while loading the infernoMap:', error);
     });
     var chestLight1 = new THREE.PointLight(0xf76628, 1000);
-    chestLight1.position.set(127,15,-733);
+    chestLight1.position.set(-324, 15,  -1212);
     var chestLight2 = new THREE.PointLight(0xf76628, 1000);
-    chestLight2.position.set(336,15,230);
+    chestLight2.position.set(-756, 15, -668);
     var chestLight3 = new THREE.PointLight(0xf76628, 1000);
-    chestLight3.position.set(435,15,-172);
-    var chestLight4 = new THREE.PointLight(0xf76628, 1000);
-    chestLight4.position.set(-672,15,-134);
-    var chestLight5 = new THREE.PointLight(0xf76628, 1000);
-    chestLight5.position.set(-375,15,315);
+    chestLight3.position.set(628,15, -728);
+
     scene.add(chestLight1);
     scene.add(chestLight2);
     scene.add(chestLight3);
-    scene.add(chestLight4);
-    scene.add(chestLight5);
+   
 
     //item setup
     var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
     var phongMaterial = new THREE.MeshPhongMaterial({ color: 0xffe600 });
     var item1 = new THREE.Mesh(boxGeometry, phongMaterial);
     item1.rotation.set(0, 0, 45);
-    item1.position.set(-400, 0, -100);
+    item1.position.set(-96, 0, -1208);
 
     var item1Light = new THREE.SpotLight(0xffe600, 5000, 0, Math.PI / 4, 1, 2);
-    item1Light.position.set(-400, 15, -100);
+    item1Light.position.set(-96, 15, -1208);
     var item1LightTarget = new THREE.Object3D();
-    item1LightTarget.position.set(-400, 0, -100);
+    item1LightTarget.position.set(-96, 0, -1208);
 
     var item2 = new THREE.Mesh(boxGeometry, phongMaterial);
     item2.rotation.set(0, 0, 45);
     item2.material.color.setHex(0x0051ff);
-    item2.position.set(-400, 0, 100);
+    item2.position.set(-700, 0, -396);
 
     var item2Light = new THREE.SpotLight(0x0051ff, 5000, 0, Math.PI / 4, 1, 2);
-    item2Light.position.set(-400, 15, 100);
+    item2Light.position.set(-700, 15, -396);
     var item2LightTarget = new THREE.Object3D();
-    item2LightTarget.position.set(-400, 0, 100);
+    item2LightTarget.position.set(-700, 0, -396);
 
     var item3 = new THREE.Mesh(boxGeometry, phongMaterial);
     item3.rotation.set(0, 0, 45);
     item3.material.color.setHex(0xbf00ff);
-    item3.position.set(400, 0, -600);
+    item3.position.set(92, 0, -584);
 
     var item3Light = new THREE.SpotLight(0xbf00ff, 5000, 0, Math.PI / 4, 1, 2);
-    item3Light.position.set(400, 15, -600);
+    item3Light.position.set(92, 15, -584);
     var item3LightTarget = new THREE.Object3D();
-    item3LightTarget.position.set(400, 0, -600);
+    item3LightTarget.position.set(92, 0, -584);
     
     scene.add(item1);
     scene.add(item1Light);
@@ -289,11 +283,9 @@ function checkAtChest() {
         var z = cube.position.z;
         
         var chests = [
-            {x: 127, z: -733},
-            {x: 336, z: 230},
-            {x: 435, z: -172},
-            {x: -672, z: -134},
-            {x: -375, z: 315}
+            {x: -324, z: -1212},
+            {x: -756, z: -668},
+            {x: 628, z: -728},
         ];
 
         for (var i = 0; i < chests.length; i++) {
@@ -329,15 +321,15 @@ function checkAtItem() {
 }
 
 function removeItem(item){
-    if(item.x === -400 && item.z === -100){
+    if(item.x === -96  && item.z === -1208){
         scene.remove(item1);
         scene.remove(item1Light);
         scene.remove(item1LightTarget);
-    }else if(item.x === -400 && item.z === 100){
+    }else if(item.x === -700  && item.z ===-396){
         scene.remove(item2);
         scene.remove(item2Light);
         scene.remove(item2LightTarget);
-    }else if(item.x === 400 && item.z === -600){
+    }else if(item.x === 92 && item.z === -584){
         scene.remove(item3);
         scene.remove(item3Light);
         scene.remove(item3LightTarget);
@@ -348,12 +340,12 @@ function removeItem(item){
 
 var moveTimer = null;
 function displayItemMessage(item) {
-    if(item.x === -400 && item.z === -100){
-        itemTextMessage.innerText = "A contract with the following text:\n\"...all earthly possessions and the signatory’s soul enter the sole possession of…\"\nThe rest is illegible."; 
-    }else if(item.x === -400 && item.z === 100){
-        itemTextMessage.innerText = "Iron chains with a light blue tint.\nThe metal is ice cold and makes me feel empty.\n...were these mine?"; 
-    }else if(item.x === 400 && item.z === -600){
-        itemTextMessage.innerText = "Was this my old dagger?\nI don’t remember where I put it.\n...how did it get here?"; 
+    if(item.x === -96  && item.z === -1208){
+        itemTextMessage.innerText = "A single metallic tear with a blue shine.\nOn the side is the initial L inscribed.\nIs this\n...for me?"; 
+    }else if(item.x === -700  && item.z ===-396){
+        itemTextMessage.innerText = "A silver mirror but the glass is broken.\nIs this how Narcissus felt when it was all over?"; 
+    }else if(item.x === 92 && item.z === -584){
+        itemTextMessage.innerText = "An ornate silver key with a lace tag reading “Mine now.”\nThis is the key for Liora’s Music Box.\nIs that my handwriting on the tag?"; 
     }
     itemTextMessage.style.opacity = 1;  
 
@@ -385,7 +377,7 @@ var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
-var moveSpeed = 0.75;
+var moveSpeed = 4;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2; // Start in the middle
