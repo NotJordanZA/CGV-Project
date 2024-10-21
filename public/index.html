@@ -17,34 +17,53 @@
       } */
 
       #vignette {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            background: radial-gradient(circle, rgba(255, 0, 0, 0) 60%, rgba(139, 0, 0, 1) 100%);
-            transition: opacity 0.5s;
-            opacity: 0; /* Starts off invisible */
-            z-index: 1999; /* Make sure it's on top */
-        }
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        background: radial-gradient(circle, rgba(255, 0, 0, 0) 60%, rgba(139, 0, 0, 1) 100%);
+        transition: opacity 0.5s;
+        opacity: 0; /* Starts off invisible */
+        z-index: 1999; /* Make sure it's on top */
+      }
 
-        /* "You Died" message */
-        #game-over-message {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            height: auto;
-            opacity: 0;
-            z-index: 1000;
-            pointer-events: none;
-            transition: opacity 1s ease-in-out;
-        }
+      /* "You Died" message */
+      #game-over-message {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: auto;
+        opacity: 0;
+        z-index: 1000;
+        pointer-events: none;
+        transition: opacity 1s ease-in-out;
+      }
+
+      #item-text-container {
+        max-width: 60vw;
+      }
+
+      #item-text, #object-interact {
+        position: absolute;
+        top: 60%;
+        width: 100%;
+        text-align: center; 
+        color: white;
+        font-size: 1.2rem;
+        font-family: serif;
+        opacity: 0;
+      }
     </style>
   </head>
   <body>
+    <p id="object-interact">Press 'E' to Interact</p>
+    <div id="item-text-container">
+      <p id="item-text"></p>
+    </div>
     <img src="assets/death.png" id="game-over-message"></img>
     <div id="vignette"></div>
     <script type="module" src="./main.js"></script>

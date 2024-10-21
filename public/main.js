@@ -27,10 +27,20 @@ let currentLevel = 0; // Start at level 0
 const levels = [level1Config, level2Config, level3Config];
 let initialCubePosition = new THREE.Vector3(0, 0, 0);
 let initialCameraPosition = new THREE.Vector3(40, 40, 40);
-let atChest = false;
+var atChest = false;
+var atItem = false;
+var playerItemCount = 0;
+var itemCount;
+var items = [
+    {x: -400, z: -100},
+    {x: -400, z: 100},
+    {x: 400, z: -600},
+];
 
 const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
+const interactMessage = document.getElementById('object-interact');
+const itemTextMessage = document.getElementById('item-text');
 
 
 // Update the vignette intensity based on darknessTimeout
@@ -131,14 +141,20 @@ let infernoMap;
 let infernoChests;
 let infernoWalls;
 let infernoWallsBoundingBox;
-
+// Chest light positions
 // 127,15,733
 // 336,15,230
 // 435,15,-172
 // -672,15,-134
 // -375,15,336
+
+//Item positionxs:
+// -400, 0, -100
+// -400, 0, 100
+// 400, 0, -600
 var floorBoundingBox = new THREE.Box3();
 if (currentLevel == 0) {
+    itemCount = 3;
     scene.background = new THREE.Color( 0x000000 );
     const gltfLoader = new GLTFLoader();
     gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
@@ -179,7 +195,7 @@ if (currentLevel == 0) {
     var chestLight2 = new THREE.PointLight(0xf76628, 1000);
     chestLight2.position.set(336,15,230);
     var chestLight3 = new THREE.PointLight(0xf76628, 1000);
-    chestLight3.position.set(435,15,-172);d
+    chestLight3.position.set(435,15,-172);
     var chestLight4 = new THREE.PointLight(0xf76628, 1000);
     chestLight4.position.set(-672,15,-134);
     var chestLight5 = new THREE.PointLight(0xf76628, 1000);
@@ -189,6 +205,53 @@ if (currentLevel == 0) {
     scene.add(chestLight3);
     scene.add(chestLight4);
     scene.add(chestLight5);
+
+    //item setup
+    var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
+    var phongMaterial = new THREE.MeshPhongMaterial({ color: 0xffe600 });
+    var item1 = new THREE.Mesh(boxGeometry, phongMaterial);
+    item1.rotation.set(0, 0, 45);
+    item1.position.set(-400, 0, -100);
+
+    var item1Light = new THREE.SpotLight(0xffe600, 5000, 0, Math.PI / 4, 1, 2);
+    item1Light.position.set(-400, 15, -100);
+    var item1LightTarget = new THREE.Object3D();
+    item1LightTarget.position.set(-400, 0, -100);
+
+    var item2 = new THREE.Mesh(boxGeometry, phongMaterial);
+    item2.rotation.set(0, 0, 45);
+    item2.material.color.setHex(0x0051ff);
+    item2.position.set(-400, 0, 100);
+
+    var item2Light = new THREE.SpotLight(0x0051ff, 5000, 0, Math.PI / 4, 1, 2);
+    item2Light.position.set(-400, 15, 100);
+    var item2LightTarget = new THREE.Object3D();
+    item2LightTarget.position.set(-400, 0, 100);
+
+    var item3 = new THREE.Mesh(boxGeometry, phongMaterial);
+    item3.rotation.set(0, 0, 45);
+    item3.material.color.setHex(0xbf00ff);
+    item3.position.set(400, 0, -600);
+
+    var item3Light = new THREE.SpotLight(0xbf00ff, 5000, 0, Math.PI / 4, 1, 2);
+    item3Light.position.set(400, 15, -600);
+    var item3LightTarget = new THREE.Object3D();
+    item3LightTarget.position.set(400, 0, -600);
+    
+    scene.add(item1);
+    scene.add(item1Light);
+    scene.add(item1LightTarget);
+    item1Light.target = item1LightTarget;
+
+    scene.add(item2);
+    scene.add(item2Light);
+    scene.add(item2LightTarget);
+    item2Light.target = item2LightTarget;
+
+    scene.add(item3);
+    scene.add(item3Light);
+    scene.add(item3LightTarget);
+    item3Light.target = item3LightTarget;
 }
 
 // Cube setup
@@ -218,6 +281,102 @@ scene.add(flashLightTarget);
 flashLight.target = flashLightTarget;
 
 cube.add(flashHolder); // Attach it to the cube
+
+// Check if player is near chest
+function checkAtChest() {
+    if (currentLevel == 0) {
+        var x = cube.position.x;
+        var z = cube.position.z;
+        
+        var chests = [
+            {x: 127, z: -733},
+            {x: 336, z: 230},
+            {x: 435, z: -172},
+            {x: -672, z: -134},
+            {x: -375, z: 315}
+        ];
+
+        for (var i = 0; i < chests.length; i++) {
+            var chest = chests[i];
+            var distance = Math.sqrt(Math.pow(chest.x - x, 2) + Math.pow(chest.z - z, 2));
+
+            if (distance <= 50) {
+                atChest = true;
+                break;
+            }
+            atChest = false;
+        }
+    }
+}
+
+// Check if player is near item
+function checkAtItem() {
+    if (currentLevel == 0) {
+        var x = cube.position.x;
+        var z = cube.position.z;
+
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var distance = Math.sqrt(Math.pow(item.x - x, 2) + Math.pow(item.z - z, 2));
+
+            if (distance <= 30) {
+                atItem = true;
+                return item;
+            }
+            atItem = false;
+        }
+    }
+}
+
+function removeItem(item){
+    if(item.x === -400 && item.z === -100){
+        scene.remove(item1);
+        scene.remove(item1Light);
+        scene.remove(item1LightTarget);
+    }else if(item.x === -400 && item.z === 100){
+        scene.remove(item2);
+        scene.remove(item2Light);
+        scene.remove(item2LightTarget);
+    }else if(item.x === 400 && item.z === -600){
+        scene.remove(item3);
+        scene.remove(item3Light);
+        scene.remove(item3LightTarget);
+    }
+    items=items.filter(element=>element!==item);
+    displayItemMessage(item);
+}
+
+var moveTimer = null;
+function displayItemMessage(item) {
+    if(item.x === -400 && item.z === -100){
+        itemTextMessage.innerText = "A contract with the following text:\n\"...all earthly possessions and the signatory’s soul enter the sole possession of…\"\nThe rest is illegible"; 
+    }else if(item.x === -400 && item.z === 100){
+        itemTextMessage.innerText = "Iron chains with a light blue tint.\nThe metal is ice cold and makes me feel empty.\n...were these mine?"; 
+    }else if(item.x === 400 && item.z === -600){
+        itemTextMessage.innerText = "Was this my old dagger?\nI don’t remember where I put it.\n...how did it get here?"; 
+    }
+    itemTextMessage.style.opacity = 1;  
+
+    if (moveTimer) {
+        clearTimeout(moveTimer);
+    }
+
+    moveTimer = setTimeout(() => {
+        itemTextMessage.style.opacity = 0; 
+    }, 10000);
+}
+
+function interactWithObject(){
+    if(atChest){
+        flashTimeout = 5000;
+        bounceTimeout = 100;
+        console.log("Flashlight recharged!");
+    }else if(atItem){
+        playerItemCount++;
+        removeItem(checkAtItem());
+        console.log("Item Collected!");
+    }
+}
 
 // Movement and control variables
 var mouse = new THREE.Vector2();
@@ -268,6 +427,7 @@ window.addEventListener('keydown', function(event) {
         case 's': moveBackward = true; break;
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
+        case 'e': interactWithObject(); break;
         case 'p': console.log(cube.position); break;
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
@@ -302,7 +462,7 @@ function updateBoundingBoxes() {
         });
     }
 
-    if (infernoWalls) {
+    if (infernoWalls && wallsBoundingBoxes.length < 5000) {
         infernoWalls.traverse((child) => {
             if (child.isMesh) {
                 const wallBoundingBox = new THREE.Box3().setFromObject(child);
@@ -321,8 +481,6 @@ function checkChestCollisions() {
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
-            flashTimeout = 5000;
-            bounceTimeout = 100;
             return true; // Collision detected
         }
     }
@@ -372,7 +530,7 @@ function handleCollisions(direction) {
     // if (!floorBoundingBox.intersectsBox(cubeBoundingBox) || checkChestCollisions()) {
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
         // If collided, revert to the previous position
-        console.log("I ams stuck");
+        // console.log("I ams stuck");
         cube.position.copy(oldCubePosition);
         camera.position.copy(oldCameraPosition);
     }
@@ -404,6 +562,17 @@ var resetLevelTimeout = 10;
 function render() {
     updatePlayerPosition();
     updateBoundingBoxes();
+    checkAtChest();
+    checkAtItem();
+    if(playerItemCount == itemCount){
+        goToLevel(1);
+    }
+    if (atChest || atItem) {
+        interactMessage.style.opacity = 1;
+    } else {
+        interactMessage.style.opacity = 0;
+    }
+
     if (flashTimeout > 100) {
         darknessTimeout = 100;
         if (flickerTimeout === 0 && Math.random() < 0.006){
@@ -452,6 +621,11 @@ function render() {
         resetLevelTimeout = 10;
         resetLevel();
     }
+
+    item1.rotation.y+=0.025;
+    item2.rotation.y+=0.025;
+    item3.rotation.y+=0.025;
+
     const vignetteIntensity = THREE.MathUtils.clamp(1 - (darknessTimeout / 100), 0, 1);
     updateVignetteIntensity(vignetteIntensity);
 
