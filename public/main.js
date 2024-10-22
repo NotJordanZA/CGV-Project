@@ -32,9 +32,9 @@ var atItem = false;
 var playerItemCount = 0;
 var itemCount;
 var items = [
-    {x: -884.43, z: -1155.1},
-    {x: -2452.8, z: 123.35},
-    {x: -849, z: 1294.7},
+    {x: -96, z: -1208},
+    {x: -700, z: -396},
+    {x: 92, z: -584},
 ];
 
 const vignette = document.getElementById('vignette');
@@ -141,15 +141,8 @@ let infernoMap;
 let infernoChests;
 let infernoWalls;
 let infernoWallsBoundingBox;
-// Chest light positions
-// -1562.3, -1204.2,
-// -1400.1, 1438.9,
-// -2496.1, 561.8,
 
-//Item positionxs:
-// -400, 0, -100
-// -400, 0, 100
-// 400, 0, -600
+
 var floorBoundingBox = new THREE.Box3();
 if (currentLevel == 0) {
     itemCount = 3;
@@ -278,7 +271,7 @@ cube.add(flashHolder); // Attach it to the cube
 
 // Check if player is near chest
 function checkAtChest() {
-    if (currentLevel == 0) {
+    if (currentLevel == 1) {
         var x = cube.position.x;
         var z = cube.position.z;
         
@@ -288,35 +281,42 @@ function checkAtChest() {
             {x: 628, z: -728},
         ];
 
+        atChest = false; // Reset before loop
+
         for (var i = 0; i < chests.length; i++) {
             var chest = chests[i];
             var distance = Math.sqrt(Math.pow(chest.x - x, 2) + Math.pow(chest.z - z, 2));
 
-            if (distance <= 50) {
+            
+            if (distance <= 100) { // Increase distance threshold for testing
                 atChest = true;
                 break;
             }
-            atChest = false;
         }
+
     }
 }
 
+
 // Check if player is near item
 function checkAtItem() {
-    if (currentLevel == 0) {
+    if (currentLevel == 1) {
         var x = cube.position.x;
         var z = cube.position.z;
+
+        atItem = false; // Reset before loop
 
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
             var distance = Math.sqrt(Math.pow(item.x - x, 2) + Math.pow(item.z - z, 2));
 
-            if (distance <= 30) {
+
+            if (distance <= 100) { // Increase distance threshold for testing
                 atItem = true;
                 return item;
             }
-            atItem = false;
         }
+     
     }
 }
 
