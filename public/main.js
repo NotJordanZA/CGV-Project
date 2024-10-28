@@ -250,7 +250,7 @@ if (currentLevel == 2) {
     const light = new THREE.AmbientLight( 0x404040 ); // soft white light
     scene.add( light );
 
-    const skyBoxGeometry = new THREE.BoxGeometry(600, 600, 600);
+    const skyBoxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
 
 // Load each texture for each side of the cube
 const loader = new THREE.TextureLoader();
