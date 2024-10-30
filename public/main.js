@@ -32,9 +32,9 @@ var atItem = false;
 var playerItemCount = 0;
 var itemCount;
 var items = [
-    {x: -96, z: -1208},
-    {x: -700, z: -396},
-    {x: 92, z: -584},
+    {x: -58, z: -725},
+    {x: -420, z: -238},
+    {x: 55, z: -350},
 ];
 
 const vignette = document.getElementById('vignette');
@@ -195,38 +195,40 @@ if (currentLevel == 2) {
     scene.add(chestLight2);
     scene.add(chestLight3);
    
-
+    // {x: -58, z: -725},
+    // {x: -420, z: -238},
+    // {x: 55, z: -350},
     //item setup
     var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
     var phongMaterial = new THREE.MeshPhongMaterial({ color: 0xffe600 });
     var item1 = new THREE.Mesh(boxGeometry, phongMaterial);
     item1.rotation.set(0, 0, 45);
-    item1.position.set(-96, 0, -1208);
+    item1.position.set(-58, 0, -725);
 
     var item1Light = new THREE.SpotLight(0xffe600, 5000, 0, Math.PI / 4, 1, 2);
-    item1Light.position.set(-96, 15, -1208);
+    item1Light.position.set(-58, 15, -725);
     var item1LightTarget = new THREE.Object3D();
-    item1LightTarget.position.set(-96, 0, -1208);
+    item1LightTarget.position.set(-58, 0, -725);
 
     var item2 = new THREE.Mesh(boxGeometry, phongMaterial);
     item2.rotation.set(0, 0, 45);
     item2.material.color.setHex(0x0051ff);
-    item2.position.set(-700, 0, -396);
+    item2.position.set(-420, 0, -238);
 
     var item2Light = new THREE.SpotLight(0x0051ff, 5000, 0, Math.PI / 4, 1, 2);
-    item2Light.position.set(-700, 15, -396);
+    item2Light.position.set(-420, 15, -238);
     var item2LightTarget = new THREE.Object3D();
-    item2LightTarget.position.set(-700, 0, -396);
+    item2LightTarget.position.set(-420, 0, -238);
 
     var item3 = new THREE.Mesh(boxGeometry, phongMaterial);
     item3.rotation.set(0, 0, 45);
     item3.material.color.setHex(0xbf00ff);
-    item3.position.set(92, 0, -584);
+    item3.position.set(55, 0, -350);
 
     var item3Light = new THREE.SpotLight(0xbf00ff, 5000, 0, Math.PI / 4, 1, 2);
-    item3Light.position.set(92, 15, -584);
+    item3Light.position.set(55, 15, -350);
     var item3LightTarget = new THREE.Object3D();
-    item3LightTarget.position.set(92, 0, -584);
+    item3LightTarget.position.set(55, 0, -350);
     
     scene.add(item1);
     scene.add(item1Light);
