@@ -86,10 +86,10 @@ export const level3Config = {
 
 // Function to apply the lighting and setup for Level 3
 export function applyLevel3Lighting(scene) {
-    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.8); // Moderate intensity
-const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.6);
-directionalLight.position.set(50, 100, 100);
-scene.add(ambientLight, directionalLight);
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.7);
+    const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.6);
+    directionalLight.position.set(50, 100, 100);
+    scene.add(ambientLight, directionalLight);
 
 }
 

@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { level1Config } from './level1.js';
 import { level2Config } from './level2.js';
 import { level3Config, applyLevel3Lighting} from './level3.js';
+import { item } from './item.js';
 
 // Set up the canvas and renderer
 var WIDTH = window.innerWidth;
@@ -22,6 +23,38 @@ var skyBox;
 camera.position.set(40, 40, 40); // Adjust these for the desired view
 camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 
+// Map configuration
+var mapRenderer = new THREE.WebGLRenderer({ alpha: true });
+mapRenderer.setSize(300, 300); 
+mapRenderer.domElement.style.position = 'absolute';
+mapRenderer.domElement.style.bottom = '0';
+mapRenderer.domElement.style.right = '5px';
+mapRenderer.domElement.style.zIndex = '9999';
+mapRenderer.domElement.style.opacity = '1';
+document.body.appendChild(mapRenderer.domElement);
+
+var mapScene = new THREE.Scene();
+var mapCamera = new THREE.OrthographicCamera(-50, 50, 50, -50, 1, 1000);
+mapCamera.position.set(0, 100, 0);
+mapCamera.lookAt(0, 0, 0);
+
+var pathPoints = [
+    new THREE.Vector3(-0.1, 0, 0.1),
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0.1, 0, -0.1)
+];
+var vertices = new Float32Array(pathPoints.length * 3);
+for (var i = 0; i < pathPoints.length; i++) {
+    vertices[i * 3] = pathPoints[i].x;
+    vertices[i * 3 + 1] = pathPoints[i].y;
+    vertices[i * 3 + 2] = pathPoints[i].z;
+}
+var pathGeometry = new THREE.BufferGeometry();
+pathGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+var pathMaterial = new THREE.LineDashedMaterial({ color: 0x361b00, dashSize: 3, gapSize: 3 });
+var pathLine = new THREE.Line(pathGeometry, pathMaterial);
+pathLine.computeLineDistances();
+
 // Level Configurations
 let currentLevel = 2; // Start at level 0
 const levels = [level1Config, level2Config, level3Config];
@@ -31,11 +64,21 @@ var atChest = false;
 var atItem = false;
 var playerItemCount = 0;
 var itemCount;
-var items = [
-    {x: -58, z: -725},
-    {x: -420, z: -238},
-    {x: 55, z: -350},
-];
+var playerFalling = false;
+var darknessTimeout = 100;
+// var items = [
+//     {x: 125, z: 300},
+//     {x: -420, z: -238},
+//     {x: 55, z: -350},
+// ];
+var items = [];
+var chests = [
+    {x: 190, z:135},
+    {x: 250, z:-100},
+    {x: 90, z:-420},
+    {x: -400, z:-60},
+    {x: -140, z:125},
+]
 
 const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
@@ -58,54 +101,26 @@ function resetLevel() {
     
     // Reset camera position
     camera.position.copy(initialCameraPosition);
-    camera.lookAt(0, 0, 0);  // Make sure camera is looking at the correct point
+    camera.lookAt(0, 0, 0); 
     flashTimeout = 5000;
     bounceTimeout = 100;
     darknessTimeout = 100;
+    paridisioMap.visible = true;
+    paridisioMapTrapped.visible = false;
+    mapScene.clear();
     gameOverMessage.style.opacity = 0;
 
-    // Reset vignette opacity to 0 (no vignette)
     vignette.style.opacity = 0;
 
-    // Optional: Reset any other elements such as lights, textures, etc.
-    setupLevel(currentLevel); // Reapply the level configurations
+    setupLevel(currentLevel);
     console.log("Level reset to its original configuration.");
 }
 
 // Function to setup levels
 function setupLevel(level) {
     const levelConfig = levels[level];
+    mapScene.add(pathLine);
     // Load the ground texture for this level
-    const textureLoader = new THREE.TextureLoader();
-    const diffuseTexture = textureLoader.load(levelConfig.groundTexture, (texture) => {
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(4, 4);
-    });
-
-    const heightTexture = textureLoader.load(levelConfig.groundHeight, (texture) => {
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(4, 4); // Tile 4 times across the plane
-    });
-    const normalTexture = textureLoader.load(levelConfig.groundNormal, (texture) => {
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(4, 4); // Tile 4 times across the plane
-    });
-    const specularTexture = textureLoader.load(levelConfig.groundSpecular, (texture) => {
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(4, 4); // Tile 4 times across the plane
-    });
-
-    // Update the plane material for this level
-    planeMaterial.map = diffuseTexture;
-    planeMaterial.normalMap = normalTexture;
-    planeMaterial.displacementMap = heightTexture;
-    planeMaterial.specularMap = specularTexture;
-    planeMaterial.displacementScale = 4;
-    planeMaterial.needsUpdate = true;
 
     // Update the cube color for this level
     cube.material.color.setHex(levelConfig.cubeColor);
@@ -114,9 +129,30 @@ function setupLevel(level) {
     flashLight.color.setHex(levelConfig.flashLightColor);
     flashLightBounce.color.setHex(levelConfig.flashLightBounceColor);
     flashLight.intensity = levelConfig.flashLightPower;
-    if (level === 2) {
-        applyLevel3Lighting(scene);
-}
+    var item1 = new item(
+        scene,
+        "./assets/level3/drop.glb",
+        125, 0, 300,
+        "A single metallic tear with a blue shine.\nOn the side is the initial L inscribed.\nIs this\n...for me?",
+        new THREE.Color(0xffe600)
+    );
+    var item2 = new item(
+        scene,
+        "./assets/level3/heart.glb",
+        -420, 0, -238,
+        "My Heart!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+        new THREE.Color(0x0051ff)
+    );
+    var item3 = new item(
+        scene,
+        "./assets/level3/key.glb",
+        55, 0, -350,
+        "An ornate silver key with a lace tag reading “Mine now.”\nThis is the key for Liora’s Music Box.\nIs that my handwriting on the tag?",
+        new THREE.Color(0xbf00ff)
+    );
+    items.push(item1);
+    items.push(item2);
+    items.push(item3);
 }
 
 // Function to move to the specified level
@@ -140,110 +176,115 @@ plane.receiveShadow = true; // This will receive the shadows
 //     scene.add(plane);
 // }
 
-let infernoMap;
-let infernoChests;
-let infernoWalls;
-let infernoWallsBoundingBox;
+let paridisioMap;
+let paridisioMapTrapped;
+let paridisioChests;
+let paridisioWalls;
+let paridisioWallsBoundingBox;
 
 
-var floorBoundingBox = new THREE.Box3();
 if (currentLevel == 2) {
+    applyLevel3Lighting(scene);
     itemCount = 3;
     // scene.background = new THREE.Color(0x333333);
     const gltfLoader = new GLTFLoader();
     gltfLoader.load('./assets/level3/cgv-paradisio-map-base-shiny.glb', (gltf) => {
-        // Add the loaded infernoMap to the scene
-        infernoMap = gltf.scene;
-        
-        // Position the infernoMap to the right of the plane
-        infernoMap.rotation.y = -Math.PI / 2;
-        infernoMap.scale.set(30,30,30);
-        infernoMap.position.set(0, -10, 0); // Adjust the position as needed
-        scene.add(infernoMap);
-        floorBoundingBox.setFromObject(infernoMap);
+        // Add the loaded paridisioMap to the scene
+        paridisioMap = gltf.scene;
+        // Position the paridisioMap to the right of the plane
+        paridisioMap.rotation.y = -Math.PI / 2;
+        paridisioMap.scale.set(30,30,30);
+        paridisioMap.position.set(0, -10, 0); // Adjust the position as needed
+        scene.add(paridisioMap);
     }, undefined, (error) => {
-        console.error('An error happened while loading the infernoMap:', error);
+        console.error('An error happened while loading the paridisioMap:', error);
+    });
+    gltfLoader.load('./assets/level3/cgv-paradisio-map-base-trapped.glb', (gltf) => {
+        // Add the loaded paridisioMap to the scene
+        paridisioMapTrapped = gltf.scene;
+        // Position the paridisioMap to the right of the plane
+        paridisioMapTrapped.rotation.y = -Math.PI / 2;
+        paridisioMapTrapped.scale.set(30,30,30);
+        paridisioMapTrapped.position.set(0, -10, 0); // Adjust the position as needed
+        paridisioMapTrapped.visible = false;
+        scene.add(paridisioMapTrapped);
+    }, undefined, (error) => {
+        console.error('An error happened while loading the paridisioMap:', error);
     });
     gltfLoader.load('./assets/level3/cgv-paradisio-map-chests.glb', (gltf) => {
-        // Add the loaded infernoMap to the scene
-        infernoChests = gltf.scene;
-        // Position the infernoMap to the right of the plane
-        infernoChests.rotation.y = -Math.PI / 2;
-        infernoChests.scale.set(30,30,30);
-        infernoChests.position.set(0, -10, 0); // Adjust the position as needed
-        scene.add(infernoChests);
+        // Add the loaded paridisioMap to the scene
+        paridisioChests = gltf.scene;
+        // Position the paridisioMap to the right of the plane
+        paridisioChests.rotation.y = -Math.PI / 2;
+        paridisioChests.scale.set(30,30,30);
+        paridisioChests.position.set(0, -10, 0); // Adjust the position as needed
+        scene.add(paridisioChests);
     }, undefined, (error) => {
-        console.error('An error happened while loading the infernoMap:', error);
+        console.error('An error happened while loading the paridisioMap:', error);
     });
     gltfLoader.load('./assets/level3/cgv-heaven-walls.glb', (gltf) => {
-        infernoWalls = gltf.scene;
-        infernoWalls.rotation.y = -Math.PI / 2;
-        infernoWalls.scale.set(30,30,30);
-        infernoWalls.position.set(5, -10, 5); // Adjust the position as needed
-        infernoWallsBoundingBox = new THREE.Box3().setFromObject(infernoWalls);
+        paridisioWalls = gltf.scene;
+        paridisioWalls.rotation.y = -Math.PI / 2;
+        paridisioWalls.scale.set(30,30,30);
+        paridisioWalls.position.set(2, -10, 2); // Adjust the position as needed
+        paridisioWallsBoundingBox = new THREE.Box3().setFromObject(paridisioWalls);
     }, undefined, (error) => {
-        console.error('An error happened while loading the infernoMap:', error);
+        console.error('An error happened while loading the paridisioMap:', error);
     });
-    var chestLight1 = new THREE.PointLight(0xf76628, 1000);
-    chestLight1.position.set(-324, 15,  -1212);
-    var chestLight2 = new THREE.PointLight(0xf76628, 1000);
-    chestLight2.position.set(-756, 15, -668);
-    var chestLight3 = new THREE.PointLight(0xf76628, 1000);
-    chestLight3.position.set(628,15, -728);
 
-    scene.add(chestLight1);
-    scene.add(chestLight2);
-    scene.add(chestLight3);
+    // Chest light setup
+    for(i = 0; i < chests.length; i++){
+        var chestLight  = new THREE.PointLight(0xb8860b, 2000);
+        chestLight.position.set(chests[i].x, 15,  chests[i].z);
+        scene.add(chestLight);
+    }
    
-    // {x: -58, z: -725},
-    // {x: -420, z: -238},
-    // {x: 55, z: -350},
     //item setup
-    var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
-    var phongMaterial = new THREE.MeshPhongMaterial({ color: 0xffe600 });
-    var item1 = new THREE.Mesh(boxGeometry, phongMaterial);
-    item1.rotation.set(0, 0, 45);
-    item1.position.set(-58, 0, -725);
+    // var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
+    // var phongMaterial = new THREE.MeshPhongMaterial({ color: 0xffe600 });
+    // var item1 = new THREE.Mesh(boxGeometry, phongMaterial);
+    // item1.rotation.set(0, 0, 45);
+    // item1.position.set(items[0].x, 0, items[0].z);
 
-    var item1Light = new THREE.SpotLight(0xffe600, 5000, 0, Math.PI / 4, 1, 2);
-    item1Light.position.set(-58, 15, -725);
-    var item1LightTarget = new THREE.Object3D();
-    item1LightTarget.position.set(-58, 0, -725);
+    // var item1Light = new THREE.SpotLight(0xffe600, 5000, 0, Math.PI / 4, 1, 2);
+    // item1Light.position.set(items[0].x, 15, items[0].z);
+    // var item1LightTarget = new THREE.Object3D();
+    // item1LightTarget.position.set(items[0].x, 0, items[0].z);
 
-    var item2 = new THREE.Mesh(boxGeometry, phongMaterial);
-    item2.rotation.set(0, 0, 45);
-    item2.material.color.setHex(0x0051ff);
-    item2.position.set(-420, 0, -238);
+    // var item2 = new THREE.Mesh(boxGeometry, phongMaterial);
+    // item2.rotation.set(0, 0, 45);
+    // item2.material.color.setHex(0x0051ff);
+    // item2.position.set(items[1].x, 0, items[1].z);
 
-    var item2Light = new THREE.SpotLight(0x0051ff, 5000, 0, Math.PI / 4, 1, 2);
-    item2Light.position.set(-420, 15, -238);
-    var item2LightTarget = new THREE.Object3D();
-    item2LightTarget.position.set(-420, 0, -238);
+    // var item2Light = new THREE.SpotLight(0x0051ff, 5000, 0, Math.PI / 4, 1, 2);
+    // item2Light.position.set(items[1].x, 15, items[1].z);
+    // var item2LightTarget = new THREE.Object3D();
+    // item2LightTarget.position.set(items[1].x, 0, items[1].z);
 
-    var item3 = new THREE.Mesh(boxGeometry, phongMaterial);
-    item3.rotation.set(0, 0, 45);
-    item3.material.color.setHex(0xbf00ff);
-    item3.position.set(55, 0, -350);
+    // var item3 = new THREE.Mesh(boxGeometry, phongMaterial);
+    // item3.rotation.set(0, 0, 45);
+    // item3.material.color.setHex(0xbf00ff);
+    // item3.position.set(items[2].x, 0, items[2].z);
 
-    var item3Light = new THREE.SpotLight(0xbf00ff, 5000, 0, Math.PI / 4, 1, 2);
-    item3Light.position.set(55, 15, -350);
-    var item3LightTarget = new THREE.Object3D();
-    item3LightTarget.position.set(55, 0, -350);
+    // var item3Light = new THREE.SpotLight(0xbf00ff, 5000, 0, Math.PI / 4, 1, 2);
+    // item3Light.position.set(items[2].x, 15, items[2].z);
+    // var item3LightTarget = new THREE.Object3D();
+    // item3LightTarget.position.set(items[2].x, 0, items[2].z);
     
-    scene.add(item1);
-    scene.add(item1Light);
-    scene.add(item1LightTarget);
-    item1Light.target = item1LightTarget;
+    // scene.add(item1);
+    // scene.add(item1Light);
+    // scene.add(item1LightTarget);
+    // item1Light.target = item1LightTarget;
 
-    scene.add(item2);
-    scene.add(item2Light);
-    scene.add(item2LightTarget);
-    item2Light.target = item2LightTarget;
+    // scene.add(item2);
+    // scene.add(item2Light);
+    // scene.add(item2LightTarget);
+    // item2Light.target = item2LightTarget;
 
-    scene.add(item3);
-    scene.add(item3Light);
-    scene.add(item3LightTarget);
-    item3Light.target = item3LightTarget;
+    // scene.add(item3);
+    // scene.add(item3Light);
+    // scene.add(item3LightTarget);
+    // item3Light.target = item3LightTarget;
 
     const directionalLight = new THREE.DirectionalLight( 0xffffff, 20 );
     directionalLight.position.set(-1000, 100, -1000);
@@ -302,11 +343,10 @@ scene.add(skyBox);
 }
 
 // Cube setup
-var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
+var boxGeometry = new THREE.BoxGeometry(8, 8, 8);
 var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
 var cube = new THREE.Mesh(boxGeometry, phongMaterial);
-cube.rotation.set(0.0, 0.0, 0);
-cube.translateX(0);
+cube.translateY(-5);
 scene.add(cube);
 
 // Flashlight setupas
@@ -331,24 +371,16 @@ cube.add(flashHolder); // Attach it to the cube
 
 // Check if player is near chest
 function checkAtChest() {
-    if (currentLevel == 1) {
+    if (currentLevel == 2) {
         var x = cube.position.x;
         var z = cube.position.z;
-        
-        var chests = [
-            {x: -324, z: -1212},
-            {x: -756, z: -668},
-            {x: 628, z: -728},
-        ];
 
         atChest = false; // Reset before loop
 
         for (var i = 0; i < chests.length; i++) {
-            var chest = chests[i];
-            var distance = Math.sqrt(Math.pow(chest.x - x, 2) + Math.pow(chest.z - z, 2));
+            var distance = Math.sqrt(Math.pow(chests[i].x - x, 2) + Math.pow(chests[i].z - z, 2));
 
-            
-            if (distance <= 100) { // Increase distance threshold for testing
+            if (distance <= 30) { // Increase distance threshold for testing
                 atChest = true;
                 break;
             }
@@ -360,20 +392,18 @@ function checkAtChest() {
 
 // Check if player is near item
 function checkAtItem() {
-    if (currentLevel == 1) {
+    if (currentLevel == 2) {
         var x = cube.position.x;
         var z = cube.position.z;
 
         atItem = false; // Reset before loop
 
         for (var i = 0; i < items.length; i++) {
-            var item = items[i];
-            var distance = Math.sqrt(Math.pow(item.x - x, 2) + Math.pow(item.z - z, 2));
-
-
-            if (distance <= 100) { // Increase distance threshold for testing
+            var distance = Math.sqrt(Math.pow(items[i].x - x, 2) + Math.pow(items[i].z - z, 2));
+            // console.log("Item ", i, " distance:", distance);
+            if (distance <= 30) { // Increase distance threshold for testing
                 atItem = true;
-                return item;
+                return items[i];
             }
         }
      
@@ -381,34 +411,30 @@ function checkAtItem() {
 }
 
 function removeItem(item){
-    if(item.x === -96  && item.z === -1208){
-        scene.remove(item1);
-        scene.remove(item1Light);
-        scene.remove(item1LightTarget);
-    }else if(item.x === -700  && item.z ===-396){
-        scene.remove(item2);
-        scene.remove(item2Light);
-        scene.remove(item2LightTarget);
-    }else if(item.x === 92 && item.z === -584){
-        scene.remove(item3);
-        scene.remove(item3Light);
-        scene.remove(item3LightTarget);
+    if(item.x === items[0].position.x  && item.z === items[0].position.z){
+        // scene.remove(item1);
+        // scene.remove(item1Light);
+        // scene.remove(item1LightTarget);
+        items[0].removeItem();
+    }else if(item.x === items[1].position.x  && item.z === items[1].position.z){
+        items[1].removeItem();
+    }else if(item.x === items[2].position.x  && item.z === items[2].position.z){
+        items[2].removeItem();
     }
-    items=items.filter(element=>element!==item);
     displayItemMessage(item);
 }
 
 var moveTimer = null;
 function displayItemMessage(item) {
-    if(item.x === -96  && item.z === -1208){
-        itemTextMessage.innerText = "A single metallic tear with a blue shine.\nOn the side is the initial L inscribed.\nIs this\n...for me?"; 
-    }else if(item.x === -700  && item.z ===-396){
-        itemTextMessage.innerText = "A silver mirror but the glass is broken.\nIs this how Narcissus felt when it was all over?"; 
-    }else if(item.x === 92 && item.z === -584){
-        itemTextMessage.innerText = "An ornate silver key with a lace tag reading “Mine now.”\nThis is the key for Liora’s Music Box.\nIs that my handwriting on the tag?"; 
+    if(item.x === items[0].position.x  && item.z === items[0].position.z){
+        itemTextMessage.innerText = items[0].descriptionText; 
+    }else if(item.x === items[1].position.x  && item.z ===items[1].position.z){
+        itemTextMessage.innerText = items[1].descriptionText; ; 
+    }else if(item.x === items[2].position.x && item.z === items[2].position.z){
+        itemTextMessage.innerText = items[2].descriptionText; 
     }
     itemTextMessage.style.opacity = 1;  
-
+    items=items.filter(element=>element!==item);
     if (moveTimer) {
         clearTimeout(moveTimer);
     }
@@ -418,15 +444,20 @@ function displayItemMessage(item) {
     }, 10000);
 }
 
+function fallingPlayer(){
+    console.log("falling");
+    cube.translateY(-1);
+}
+
 function interactWithObject(){
     if(atChest){
-        flashTimeout = 5000;
-        bounceTimeout = 100;
-        console.log("Flashlight recharged!");
+        paridisioMap.visible = false;
+        paridisioMapTrapped.visible = true;
+        darknessTimeout = 0;
+        playerFalling = true;
     }else if(atItem){
         playerItemCount++;
         removeItem(checkAtItem());
-        console.log("Item Collected!");
     }
 }
 
@@ -464,7 +495,6 @@ window.addEventListener('mousemove', function(event) {
     flashLightTarget.position.y = 2;
 });
 
-var darknessTimeout = 100;
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1': goToLevel(0); break; // Move to Level 1
@@ -500,8 +530,8 @@ function updateBoundingBoxes() {
     // Update player's bounding box
     cubeBoundingBox.setFromObject(cube);
 
-    if (infernoChests && chestsBoundingBoxes.length < 1000) {
-        infernoChests.traverse((child) => {
+    if (paridisioChests && chestsBoundingBoxes.length < 1000) {
+        paridisioChests.traverse((child) => {
             if (child.isMesh) {
                 const chestBoundingBox = new THREE.Box3().setFromObject(child);
                 chestsBoundingBoxes.push(chestBoundingBox);
@@ -509,8 +539,8 @@ function updateBoundingBoxes() {
         });
     }
 
-    if (infernoWalls && wallsBoundingBoxes.length < 5000) {
-        infernoWalls.traverse((child) => {
+    if (paridisioWalls && wallsBoundingBoxes.length < 5000) {
+        paridisioWalls.traverse((child) => {
             if (child.isMesh) {
                 const wallBoundingBox = new THREE.Box3().setFromObject(child);
                 wallsBoundingBoxes.push(wallBoundingBox);
@@ -579,7 +609,15 @@ function handleCollisions(direction) {
         // console.log("I ams stuck");
         cube.position.copy(oldCubePosition);
         camera.position.copy(oldCameraPosition);
+    }else{
+        updatePathTrail();
     }
+}
+
+function updatePathTrail() {
+    pathPoints.push(new THREE.Vector3(cube.position.x/15, 0, cube.position.z/15));
+    pathGeometry.setFromPoints(pathPoints);
+    pathLine.computeLineDistances();
 }
 
 function updatePlayerPosition() {
@@ -621,45 +659,12 @@ function render() {
         interactMessage.style.opacity = 0;
     }
 
-    if (flashTimeout > 100) {
-        darknessTimeout = 100;
-        if (flickerTimeout === 0 && Math.random() < 0.006){
-            flickerTimeout = 30;
-        }
-        flashTimeout -= 0.9;
-        bounceTimeout -= 0.00018;
-    }else{
-        darknessTimeout -= 0.1;
-    }
-    if (flickerTimeout > 0){
-        flickerTimeout -= 1;
-        switch (flickerTimeout){
-            case 25:
-                flashLight.intensity = 5000;
-                flashLightBounce.intensity = 100;
-            break;
-            case 15:
-                flashLight.intensity = 1;
-                flashLightBounce.intensity = 1;
-            break;
-            case 5:
-                flashLight.intensity = 5000;
-                flashLightBounce.intensity = 100;
-            break;
-            case 1:
-                flashLight.intensity = 1;
-                flashLightBounce.intensity = 1;
-            break;
-        }
-    }
-    else {
-        flashLight.intensity = flashTimeout;
-        flashLightBounce.intensity = bounceTimeout;
-    }
-
 
     if (darknessTimeout <= 0) {
         showGameOverScreen();
+        if(playerFalling){
+            fallingPlayer();
+        }
         flashTimeout = 0;
         bounceTimeout = 0;
         resetLevelTimeout -= 0.03;
@@ -670,9 +675,9 @@ function render() {
         resetLevel();
     }
 
-    item1.rotation.y+=0.025;
-    item2.rotation.y+=0.025;
-    item3.rotation.y+=0.025;
+    // items[0].rotation.y+=0.025;
+    // items[1].rotation.y+=0.025;
+    // items[2].rotation.y+=0.025;
 
     const vignetteIntensity = THREE.MathUtils.clamp(1 - (darknessTimeout / 100), 0, 1);
     updateVignetteIntensity(vignetteIntensity);
@@ -682,6 +687,7 @@ function render() {
     }
 
     requestAnimationFrame(render);
+    mapRenderer.render(mapScene, mapCamera);
     renderer.render(scene, camera);
 }
 
