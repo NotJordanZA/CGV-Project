@@ -65,12 +65,10 @@ var atItem = false;
 var playerItemCount = 0;
 var itemCount;
 var playerFalling = false;
+let fallSpeed = 0;
+let jumpSpeed = 1;
+let fallJumping = true;
 var darknessTimeout = 100;
-// var items = [
-//     {x: 125, z: 300},
-//     {x: -420, z: -238},
-//     {x: 55, z: -350},
-// ];
 var items = [];
 var chests = [
     {x: 190, z:135},
@@ -96,18 +94,26 @@ function showGameOverScreen() {
 }
 
 function resetLevel() {
-    // Reset cube position
     cube.position.copy(initialCubePosition);
-    
-    // Reset camera position
     camera.position.copy(initialCameraPosition);
     camera.lookAt(0, 0, 0); 
+
+    items.forEach(item=>{ // Remove items from map
+        item.removeThisItem();
+    })
+
     flashTimeout = 5000;
     bounceTimeout = 100;
     darknessTimeout = 100;
     paridisioMap.visible = true;
     paridisioMapTrapped.visible = false;
+    fallSpeed = 0;
+    fallJumping = true;
+    jumpSpeed = 1;
     mapScene.clear();
+    pathPoints = [];
+    items = [];
+    playerItemCount = 0;
     gameOverMessage.style.opacity = 0;
 
     vignette.style.opacity = 0;
@@ -120,9 +126,6 @@ function resetLevel() {
 function setupLevel(level) {
     const levelConfig = levels[level];
     mapScene.add(pathLine);
-    // Load the ground texture for this level
-
-    // Update the cube color for this level
     cube.material.color.setHex(levelConfig.cubeColor);
 
     // Update flashlight color and power for this level
@@ -155,7 +158,6 @@ function setupLevel(level) {
     items.push(item3);
 }
 
-// Function to move to the specified level
 function goToLevel(level) {
     if (level >= 0 && level < levels.length) {
         currentLevel = level;
@@ -164,17 +166,6 @@ function goToLevel(level) {
         camera.position.set(40, 40, 40); // Reset the camera position
     }
 }
-
-// Ground (Plane) setup
-var planeGeometry = new THREE.PlaneGeometry(100, 100, 150, 150);
-var planeMaterial = new THREE.MeshPhongMaterial();
-var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-plane.rotation.x = -Math.PI / 2;
-plane.position.y = -10;
-plane.receiveShadow = true; // This will receive the shadows
-// if (currentLevel !== 0){
-//     scene.add(plane);
-// }
 
 let paridisioMap;
 let paridisioMapTrapped;
@@ -186,38 +177,31 @@ let paridisioWallsBoundingBox;
 if (currentLevel == 2) {
     applyLevel3Lighting(scene);
     itemCount = 3;
-    // scene.background = new THREE.Color(0x333333);
     const gltfLoader = new GLTFLoader();
     gltfLoader.load('./assets/level3/cgv-paradisio-map-base-shiny.glb', (gltf) => {
-        // Add the loaded paridisioMap to the scene
         paridisioMap = gltf.scene;
-        // Position the paridisioMap to the right of the plane
         paridisioMap.rotation.y = -Math.PI / 2;
         paridisioMap.scale.set(30,30,30);
-        paridisioMap.position.set(0, -10, 0); // Adjust the position as needed
+        paridisioMap.position.set(0, -10, 0); 
         scene.add(paridisioMap);
     }, undefined, (error) => {
         console.error('An error happened while loading the paridisioMap:', error);
     });
     gltfLoader.load('./assets/level3/cgv-paradisio-map-base-trapped.glb', (gltf) => {
-        // Add the loaded paridisioMap to the scene
         paridisioMapTrapped = gltf.scene;
-        // Position the paridisioMap to the right of the plane
         paridisioMapTrapped.rotation.y = -Math.PI / 2;
         paridisioMapTrapped.scale.set(30,30,30);
-        paridisioMapTrapped.position.set(0, -10, 0); // Adjust the position as needed
+        paridisioMapTrapped.position.set(0, -10, 0); 
         paridisioMapTrapped.visible = false;
         scene.add(paridisioMapTrapped);
     }, undefined, (error) => {
         console.error('An error happened while loading the paridisioMap:', error);
     });
     gltfLoader.load('./assets/level3/cgv-paradisio-map-chests.glb', (gltf) => {
-        // Add the loaded paridisioMap to the scene
         paridisioChests = gltf.scene;
-        // Position the paridisioMap to the right of the plane
         paridisioChests.rotation.y = -Math.PI / 2;
         paridisioChests.scale.set(30,30,30);
-        paridisioChests.position.set(0, -10, 0); // Adjust the position as needed
+        paridisioChests.position.set(0, -10, 0); 
         scene.add(paridisioChests);
     }, undefined, (error) => {
         console.error('An error happened while loading the paridisioMap:', error);
@@ -226,7 +210,7 @@ if (currentLevel == 2) {
         paridisioWalls = gltf.scene;
         paridisioWalls.rotation.y = -Math.PI / 2;
         paridisioWalls.scale.set(30,30,30);
-        paridisioWalls.position.set(2, -10, 2); // Adjust the position as needed
+        paridisioWalls.position.set(2, -10, 2); 
         paridisioWallsBoundingBox = new THREE.Box3().setFromObject(paridisioWalls);
     }, undefined, (error) => {
         console.error('An error happened while loading the paridisioMap:', error);
@@ -238,54 +222,8 @@ if (currentLevel == 2) {
         chestLight.position.set(chests[i].x, 15,  chests[i].z);
         scene.add(chestLight);
     }
-   
-    //item setup
-    // var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
-    // var phongMaterial = new THREE.MeshPhongMaterial({ color: 0xffe600 });
-    // var item1 = new THREE.Mesh(boxGeometry, phongMaterial);
-    // item1.rotation.set(0, 0, 45);
-    // item1.position.set(items[0].x, 0, items[0].z);
 
-    // var item1Light = new THREE.SpotLight(0xffe600, 5000, 0, Math.PI / 4, 1, 2);
-    // item1Light.position.set(items[0].x, 15, items[0].z);
-    // var item1LightTarget = new THREE.Object3D();
-    // item1LightTarget.position.set(items[0].x, 0, items[0].z);
-
-    // var item2 = new THREE.Mesh(boxGeometry, phongMaterial);
-    // item2.rotation.set(0, 0, 45);
-    // item2.material.color.setHex(0x0051ff);
-    // item2.position.set(items[1].x, 0, items[1].z);
-
-    // var item2Light = new THREE.SpotLight(0x0051ff, 5000, 0, Math.PI / 4, 1, 2);
-    // item2Light.position.set(items[1].x, 15, items[1].z);
-    // var item2LightTarget = new THREE.Object3D();
-    // item2LightTarget.position.set(items[1].x, 0, items[1].z);
-
-    // var item3 = new THREE.Mesh(boxGeometry, phongMaterial);
-    // item3.rotation.set(0, 0, 45);
-    // item3.material.color.setHex(0xbf00ff);
-    // item3.position.set(items[2].x, 0, items[2].z);
-
-    // var item3Light = new THREE.SpotLight(0xbf00ff, 5000, 0, Math.PI / 4, 1, 2);
-    // item3Light.position.set(items[2].x, 15, items[2].z);
-    // var item3LightTarget = new THREE.Object3D();
-    // item3LightTarget.position.set(items[2].x, 0, items[2].z);
-    
-    // scene.add(item1);
-    // scene.add(item1Light);
-    // scene.add(item1LightTarget);
-    // item1Light.target = item1LightTarget;
-
-    // scene.add(item2);
-    // scene.add(item2Light);
-    // scene.add(item2LightTarget);
-    // item2Light.target = item2LightTarget;
-
-    // scene.add(item3);
-    // scene.add(item3Light);
-    // scene.add(item3LightTarget);
-    // item3Light.target = item3LightTarget;
-
+    // World light setup
     const directionalLight = new THREE.DirectionalLight( 0xffffff, 20 );
     directionalLight.position.set(-1000, 100, -1000);
     directionalLight.castShadow = true;
@@ -295,7 +233,7 @@ if (currentLevel == 2) {
 
     const skyBoxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
 
-// Load each texture for each side of the cube
+// Skybox setup
 const loader = new THREE.TextureLoader();
 const materials = [
     new THREE.MeshBasicMaterial({
@@ -329,16 +267,10 @@ materials.forEach(material => {
         material.map.repeat.set(3, 3);
         material.map.wrapS = THREE.RepeatWrapping;
         material.map.wrapT = THREE.RepeatWrapping;
-        // material.map.wrapS = THREE.ClampToEdgeWrapping;
-        // material.map.wrapT = THREE.ClampToEdgeWrapping;
         material.map.minFilter = THREE.LinearFilter;
     }
 });
-
-// Combine the materials into a single cube mesh
 skyBox = new THREE.Mesh(skyBoxGeometry, materials);
-
-// Add the cube to the scene
 scene.add(skyBox);
 }
 
@@ -375,12 +307,12 @@ function checkAtChest() {
         var x = cube.position.x;
         var z = cube.position.z;
 
-        atChest = false; // Reset before loop
+        atChest = false;
 
         for (var i = 0; i < chests.length; i++) {
             var distance = Math.sqrt(Math.pow(chests[i].x - x, 2) + Math.pow(chests[i].z - z, 2));
 
-            if (distance <= 30) { // Increase distance threshold for testing
+            if (distance <= 30) { 
                 atChest = true;
                 break;
             }
@@ -389,19 +321,17 @@ function checkAtChest() {
     }
 }
 
-
 // Check if player is near item
 function checkAtItem() {
     if (currentLevel == 2) {
         var x = cube.position.x;
         var z = cube.position.z;
 
-        atItem = false; // Reset before loop
+        atItem = false;
 
         for (var i = 0; i < items.length; i++) {
-            var distance = Math.sqrt(Math.pow(items[i].x - x, 2) + Math.pow(items[i].z - z, 2));
-            // console.log("Item ", i, " distance:", distance);
-            if (distance <= 30) { // Increase distance threshold for testing
+            var distance = Math.sqrt(Math.pow(items[i].position.x - x, 2) + Math.pow(items[i].position.z - z, 2));
+            if (distance <= 30) { 
                 atItem = true;
                 return items[i];
             }
@@ -411,42 +341,36 @@ function checkAtItem() {
 }
 
 function removeItem(item){
-    if(item.x === items[0].position.x  && item.z === items[0].position.z){
-        // scene.remove(item1);
-        // scene.remove(item1Light);
-        // scene.remove(item1LightTarget);
-        items[0].removeItem();
-    }else if(item.x === items[1].position.x  && item.z === items[1].position.z){
-        items[1].removeItem();
-    }else if(item.x === items[2].position.x  && item.z === items[2].position.z){
-        items[2].removeItem();
-    }
+    item.removeThisItem();
     displayItemMessage(item);
 }
 
 var moveTimer = null;
 function displayItemMessage(item) {
-    if(item.x === items[0].position.x  && item.z === items[0].position.z){
-        itemTextMessage.innerText = items[0].descriptionText; 
-    }else if(item.x === items[1].position.x  && item.z ===items[1].position.z){
-        itemTextMessage.innerText = items[1].descriptionText; ; 
-    }else if(item.x === items[2].position.x && item.z === items[2].position.z){
-        itemTextMessage.innerText = items[2].descriptionText; 
-    }
+    itemTextMessage.innerText = item.getDescription();
     itemTextMessage.style.opacity = 1;  
     items=items.filter(element=>element!==item);
     if (moveTimer) {
         clearTimeout(moveTimer);
     }
-
     moveTimer = setTimeout(() => {
         itemTextMessage.style.opacity = 0; 
     }, 10000);
 }
 
-function fallingPlayer(){
-    console.log("falling");
-    cube.translateY(-1);
+function fallingPlayer() {
+    if (fallJumping) {
+        cube.translateY(jumpSpeed);
+        jumpSpeed -= 0.05;
+        
+        if (jumpSpeed <= 0) {
+            fallJumping = false;
+            fallSpeed = 0;
+        }
+    } else {
+        fallSpeed -= 0.05;
+        cube.translateY(fallSpeed);
+    }
 }
 
 function interactWithObject(){
@@ -468,24 +392,21 @@ var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
-var moveSpeed = 4;
+var moveSpeed = 1.25;
 var flashLightDistance = 10;
 
-let previousMouseX = window.innerWidth / 2; // Start in the middle
+let previousMouseX = window.innerWidth / 2;
 let angle = -45;
-const rotationSpeed = 0.006; // Speed of arc rotation
+const rotationSpeed = 0.006;
 
 window.addEventListener('mousemove', function(event) {
-    // Calculate the horizontal mouse movement
     const mouseX = event.clientX;
     const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
     const deltaX = wrappedMouseX - previousMouseX;
     previousMouseX = wrappedMouseX;
 
-    // Adjust the angle based on mouse movement
     angle += deltaX * rotationSpeed;
-
-    // Update the flashHolder position based on the new angle
+    
     flashHolder.position.x = flashLightDistance * Math.cos(angle);
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
     flashHolder.position.y = 2; 
@@ -603,17 +524,16 @@ function handleCollisions(direction) {
     // Update the bounding box after the attempted movement
     cubeBoundingBox.setFromObject(cube);
 
-    // Check if the player has collided with the wall or a chest
+    // Check if the player has collided with the wall or a chest, revert position if true
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
-        // If collided, revert to the previous position
-        // console.log("I ams stuck");
         cube.position.copy(oldCubePosition);
         camera.position.copy(oldCameraPosition);
-    }else{
+    }else{ // Update minimap
         updatePathTrail();
     }
 }
 
+// Update minimap
 function updatePathTrail() {
     pathPoints.push(new THREE.Vector3(cube.position.x/15, 0, cube.position.z/15));
     pathGeometry.setFromPoints(pathPoints);
@@ -635,7 +555,6 @@ function updatePlayerPosition() {
     }
 }
 
-// Update resolution on window resize
 window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
@@ -644,10 +563,6 @@ var flickerTimeout = 0;
 var resetLevelTimeout = 10;
 
 function render() {
-    updatePlayerPosition();
-    updateBoundingBoxes();
-    checkAtChest();
-    checkAtItem();
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
@@ -668,6 +583,13 @@ function render() {
         flashTimeout = 0;
         bounceTimeout = 0;
         resetLevelTimeout -= 0.03;
+        itemTextMessage.style.opacity = 0;
+        interactMessage.style.opacity = 0;
+    }else{
+        updatePlayerPosition();
+        updateBoundingBoxes();
+        checkAtChest();
+        checkAtItem();
     }
 
     if(resetLevelTimeout <= 0){
@@ -675,9 +597,9 @@ function render() {
         resetLevel();
     }
 
-    // items[0].rotation.y+=0.025;
-    // items[1].rotation.y+=0.025;
-    // items[2].rotation.y+=0.025;
+    for(i = 0; i< items.length; i++){
+        items[i].itemGroup.rotation.y+=0.025;
+    }
 
     const vignetteIntensity = THREE.MathUtils.clamp(1 - (darknessTimeout / 100), 0, 1);
     updateVignetteIntensity(vignetteIntensity);
