@@ -115,7 +115,6 @@ function resetLevel() {
     items = [];
     playerItemCount = 0;
     gameOverMessage.style.opacity = 0;
-
     vignette.style.opacity = 0;
 
     setupLevel(currentLevel);
@@ -159,11 +158,16 @@ function setupLevel(level) {
 }
 
 function goToLevel(level) {
-    if (level >= 0 && level < levels.length) {
-        currentLevel = level;
-        setupLevel(currentLevel);
-        cube.position.set(0, 0, 0); // Reset the cube position for the new level
-        camera.position.set(40, 40, 40); // Reset the camera position
+    switch(level){
+        case 0:
+            location.href = 'inferno.html';
+            break;
+        case 1:
+            location.href = 'purgatory.html';
+            break;
+        case 2:
+            location.href = 'paradisio.html';
+            break;
     }
 }
 
@@ -174,64 +178,63 @@ let paridisioWalls;
 let paridisioWallsBoundingBox;
 
 
-if (currentLevel == 2) {
-    applyLevel3Lighting(scene);
-    itemCount = 3;
-    const gltfLoader = new GLTFLoader();
-    gltfLoader.load('./assets/level3/cgv-paradisio-map-base-shiny.glb', (gltf) => {
-        paridisioMap = gltf.scene;
-        paridisioMap.rotation.y = -Math.PI / 2;
-        paridisioMap.scale.set(30,30,30);
-        paridisioMap.position.set(0, -10, 0); 
-        scene.add(paridisioMap);
-    }, undefined, (error) => {
-        console.error('An error happened while loading the paridisioMap:', error);
-    });
-    gltfLoader.load('./assets/level3/cgv-paradisio-map-base-trapped.glb', (gltf) => {
-        paridisioMapTrapped = gltf.scene;
-        paridisioMapTrapped.rotation.y = -Math.PI / 2;
-        paridisioMapTrapped.scale.set(30,30,30);
-        paridisioMapTrapped.position.set(0, -10, 0); 
-        paridisioMapTrapped.visible = false;
-        scene.add(paridisioMapTrapped);
-    }, undefined, (error) => {
-        console.error('An error happened while loading the paridisioMap:', error);
-    });
-    gltfLoader.load('./assets/level3/cgv-paradisio-map-chests.glb', (gltf) => {
-        paridisioChests = gltf.scene;
-        paridisioChests.rotation.y = -Math.PI / 2;
-        paridisioChests.scale.set(30,30,30);
-        paridisioChests.position.set(0, -10, 0); 
-        scene.add(paridisioChests);
-    }, undefined, (error) => {
-        console.error('An error happened while loading the paridisioMap:', error);
-    });
-    gltfLoader.load('./assets/level3/cgv-heaven-walls.glb', (gltf) => {
-        paridisioWalls = gltf.scene;
-        paridisioWalls.rotation.y = -Math.PI / 2;
-        paridisioWalls.scale.set(30,30,30);
-        paridisioWalls.position.set(2, -10, 2); 
-        paridisioWallsBoundingBox = new THREE.Box3().setFromObject(paridisioWalls);
-    }, undefined, (error) => {
-        console.error('An error happened while loading the paridisioMap:', error);
-    });
+applyLevel3Lighting(scene);
+itemCount = 3;
+const gltfLoader = new GLTFLoader();
+gltfLoader.load('./assets/level3/cgv-paradisio-map-base-shiny.glb', (gltf) => {
+    paridisioMap = gltf.scene;
+    paridisioMap.rotation.y = -Math.PI / 2;
+    paridisioMap.scale.set(30,30,30);
+    paridisioMap.position.set(0, -10, 0); 
+    scene.add(paridisioMap);
+}, undefined, (error) => {
+    console.error('An error happened while loading the paridisioMap:', error);
+});
+gltfLoader.load('./assets/level3/cgv-paradisio-map-base-trapped.glb', (gltf) => {
+    paridisioMapTrapped = gltf.scene;
+    paridisioMapTrapped.rotation.y = -Math.PI / 2;
+    paridisioMapTrapped.scale.set(30,30,30);
+    paridisioMapTrapped.position.set(0, -10, 0); 
+    paridisioMapTrapped.visible = false;
+    scene.add(paridisioMapTrapped);
+}, undefined, (error) => {
+    console.error('An error happened while loading the paridisioMap:', error);
+});
+gltfLoader.load('./assets/level3/cgv-paradisio-map-chests.glb', (gltf) => {
+    paridisioChests = gltf.scene;
+    paridisioChests.rotation.y = -Math.PI / 2;
+    paridisioChests.scale.set(30,30,30);
+    paridisioChests.position.set(0, -10, 0); 
+    scene.add(paridisioChests);
+}, undefined, (error) => {
+    console.error('An error happened while loading the paridisioMap:', error);
+});
+gltfLoader.load('./assets/level3/cgv-heaven-walls.glb', (gltf) => {
+    paridisioWalls = gltf.scene;
+    paridisioWalls.rotation.y = -Math.PI / 2;
+    paridisioWalls.scale.set(30,30,30);
+    paridisioWalls.position.set(2, -10, 2); 
+    paridisioWallsBoundingBox = new THREE.Box3().setFromObject(paridisioWalls);
+}, undefined, (error) => {
+    console.error('An error happened while loading the paridisioMap:', error);
+});
 
-    // Chest light setup
-    for(i = 0; i < chests.length; i++){
-        var chestLight  = new THREE.PointLight(0xb8860b, 2000);
-        chestLight.position.set(chests[i].x, 15,  chests[i].z);
-        scene.add(chestLight);
-    }
+// Chest light setup
+for(i = 0; i < chests.length; i++){
+    var chestLight  = new THREE.PointLight(0xb8860b, 2000);
+    chestLight.position.set(chests[i].x, 15,  chests[i].z);
+    scene.add(chestLight);
+}
 
-    // World light setup
-    const directionalLight = new THREE.DirectionalLight( 0xffffff, 20 );
-    directionalLight.position.set(-1000, 100, -1000);
-    directionalLight.castShadow = true;
-    scene.add( directionalLight );
-    const light = new THREE.AmbientLight( 0x404040 ); // soft white light
-    scene.add( light );
+// World light setup
+const directionalLight = new THREE.DirectionalLight( 0xffffff, 20 );
+directionalLight.position.set(-1000, 100, -1000);
+directionalLight.castShadow = true;
+scene.add( directionalLight );
+const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+scene.add( light );
 
-    const skyBoxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
+const skyBoxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
 
 // Skybox setup
 const loader = new THREE.TextureLoader();
@@ -272,7 +275,7 @@ materials.forEach(material => {
 });
 skyBox = new THREE.Mesh(skyBoxGeometry, materials);
 scene.add(skyBox);
-}
+
 
 // Cube setup
 var boxGeometry = new THREE.BoxGeometry(8, 8, 8);
@@ -303,40 +306,34 @@ cube.add(flashHolder); // Attach it to the cube
 
 // Check if player is near chest
 function checkAtChest() {
-    if (currentLevel == 2) {
-        var x = cube.position.x;
-        var z = cube.position.z;
+    var x = cube.position.x;
+    var z = cube.position.z;
 
-        atChest = false;
+    atChest = false;
 
-        for (var i = 0; i < chests.length; i++) {
-            var distance = Math.sqrt(Math.pow(chests[i].x - x, 2) + Math.pow(chests[i].z - z, 2));
+    for (var i = 0; i < chests.length; i++) {
+        var distance = Math.sqrt(Math.pow(chests[i].x - x, 2) + Math.pow(chests[i].z - z, 2));
 
-            if (distance <= 30) { 
-                atChest = true;
-                break;
-            }
+        if (distance <= 30) { 
+            atChest = true;
+            break;
         }
-
     }
 }
 
 // Check if player is near item
 function checkAtItem() {
-    if (currentLevel == 2) {
-        var x = cube.position.x;
-        var z = cube.position.z;
+    var x = cube.position.x;
+    var z = cube.position.z;
 
-        atItem = false;
+    atItem = false;
 
-        for (var i = 0; i < items.length; i++) {
-            var distance = Math.sqrt(Math.pow(items[i].position.x - x, 2) + Math.pow(items[i].position.z - z, 2));
-            if (distance <= 30) { 
-                atItem = true;
-                return items[i];
-            }
+    for (var i = 0; i < items.length; i++) {
+        var distance = Math.sqrt(Math.pow(items[i].position.x - x, 2) + Math.pow(items[i].position.z - z, 2));
+        if (distance <= 30) { 
+            atItem = true;
+            return items[i];
         }
-     
     }
 }
 
@@ -386,8 +383,6 @@ function interactWithObject(){
 }
 
 // Movement and control variables
-var mouse = new THREE.Vector2();
-var raycaster = new THREE.Raycaster();
 var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;

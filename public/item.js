@@ -12,7 +12,7 @@ export class item {
         this.itemGroup = new THREE.Group(); 
         this.itemGroup.position.set(x, y, z);
         this.loadModel();
-        this.addSpotlight();
+        this.addLight();
         scene.add(this.itemGroup);
     }
 
@@ -22,8 +22,16 @@ export class item {
         loader.load(this.modelPath, (gltf) => {
             this.itemModel = gltf.scene;
             this.itemModel.position.set(0, 0, 0);
-            if(this.modelPath === "./assets/level3/key.glb" || this.modelPath === "./assets/level3/drop.glb"){
+            if(this.modelPath.includes("key.glb") || this.modelPath.includes("drop.glb")){
                 this.itemModel.scale.set(10, 10, 10);
+            }
+            if(this.modelPath.includes("scroll.glb")){
+                this.itemModel.scale.set(5, 5, 5);
+                this.itemModel.translateY(-2);
+            }
+            if(this.modelPath.includes("knife.glb")){
+                this.itemModel.scale.set(20, 20, 20);
+                this.itemModel.translateY(-10);
             }
             this.itemGroup.add(this.itemModel);
         }, undefined, (error) => {
@@ -31,15 +39,9 @@ export class item {
         });
     }
 
-    addSpotlight() {
-        // var itemLight = new THREE.SpotLight(this.spotlightColor, 20000, 0, Math.PI / 4, 1, 2);
+    addLight() {
         var itemLight = new THREE.PointLight(this.lightColor, 2500);
-        // var itemLightTarget = new THREE.Object3D();
         this.itemGroup.add(itemLight);
-        // itemLight
-        // itemLight.position.set(0, 15, 0);
-        // itemLightTarget.position.set(0, 0, 0);
-        // itemLight.target = itemLightTarget;
     }
     
     removeThisItem(){
