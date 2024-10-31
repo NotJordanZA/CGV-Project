@@ -19,6 +19,25 @@ var aspect = WIDTH / HEIGHT;
 var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
 
+//Load and add model
+var playerModel;
+var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
+const gltfLoader = new GLTFLoader();
+gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
+    playerModel = gltf.scene;
+    playerModel.scale.set(5, 5, 5); // Adjust scale as needed
+    playerModel.position.set(0, 0, 0);
+    playerModel.rotateY(Math.PI);
+    scene.add(playerModel);
+    playerModel.add(flashHolder); // Attach it to the cube
+    render();
+}, undefined, (error) => {
+    console.error('An error happened while loading the player model:', error);
+});
+
+
+
+
 // Position the camera for an isometric view (45 degrees)
 camera.position.set(40, 40, 40); // Adjust these for the desired view
 camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
@@ -58,7 +77,7 @@ pathLine.computeLineDistances();
 // Level Configurations
 let currentLevel = 1; // Start at level 0
 const levels = [level1Config, level2Config, level3Config];
-let initialCubePosition = new THREE.Vector3(0, 0, 0);
+let initialPlayerModelPosition = new THREE.Vector3(0, 0, 0);
 let initialCameraPosition = new THREE.Vector3(40, 40, 40);
 var atChest = false;
 var atItem = false;
@@ -88,7 +107,7 @@ function showGameOverScreen() {
 }
 
 function resetLevel() {
-    cube.position.copy(initialCubePosition);
+    playerModel.position.copy(initialPlayerModelPosition);
     camera.position.copy(initialCameraPosition);
 
     items.forEach(item=>{ // Remove items from map
@@ -116,7 +135,7 @@ function setupLevel(level) {
     const levelConfig = levels[level];
     mapScene.add(pathLine);
     // Update the cube color for this level
-    cube.material.color.setHex(levelConfig.cubeColor);
+    playerModel.material.color.setHex(levelConfig.playerModelColor);
 
     // Update flashlight color and power for this level
     flashLight.color.setHex(levelConfig.flashLightColor);
@@ -173,7 +192,6 @@ let purgatoryWallsBoundingBox;
 var floorBoundingBox = new THREE.Box3();
 itemCount = 3;
 scene.background = new THREE.Color( 0x000000 );
-const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/purgatory/cgv-purgatory-map-baked-mesh.glb', (gltf) => {
     // Add the loaded purgatoryMap to the scene
     purgatoryMap = gltf.scene;
@@ -232,13 +250,7 @@ for(i = 0; i < chests.length; i++){
     scene.add(chestLight);
 }
 
-// Cube setup
-var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
-var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
-var cube = new THREE.Mesh(boxGeometry, phongMaterial);
-cube.rotation.set(0.0, 0.0, 0);
-cube.translateX(0);
-scene.add(cube);
+
 
 // Flashlight setupas
 var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
@@ -258,12 +270,10 @@ var flashLightTarget = new THREE.Object3D();
 scene.add(flashLightTarget);
 flashLight.target = flashLightTarget;
 
-cube.add(flashHolder); // Attach it to the cube
-
 // Check if player is near chest
 function checkAtChest() {
-    var x = cube.position.x;
-    var z = cube.position.z;
+    var x = playerModel.position.x;
+    var z = playerModel.position.z;
 
     atChest = false;
 
@@ -280,8 +290,8 @@ function checkAtChest() {
 
 // Check if player is near item
 function checkAtItem() {
-    var x = cube.position.x;
-    var z = cube.position.z;
+    var x = playerModel.position.x;
+    var z = playerModel.position.z;
 
     atItem = false;
 
@@ -350,8 +360,8 @@ window.addEventListener('mousemove', function(event) {
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
     flashHolder.position.y = 2; 
 
-    flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.x = playerModel.position.x + 10*flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerModel.position.z +10*flashLightDistance * Math.sin(angle);
     flashLightTarget.position.y = 2;
 });
 
@@ -366,7 +376,7 @@ window.addEventListener('keydown', function(event) {
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
-        case 'p': console.log(cube.position); break;
+        case 'p': console.log(playerModel.position); break;
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
@@ -382,14 +392,14 @@ window.addEventListener('keyup', function(event) {
     }
 });
 
-var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
+var playerModelBoundingBox = new THREE.Box3();
 var chestsBoundingBoxes = [];
 var wallsBoundingBoxes = [];
 
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
     // Update player's bounding box
-    cubeBoundingBox.setFromObject(cube);
+    playerModelBoundingBox.setFromObject(playerModel);
 
     if (infernoChests && chestsBoundingBoxes.length < 1000) {
         infernoChests.traverse((child) => {
@@ -412,10 +422,10 @@ function updateBoundingBoxes() {
 // Check for collision with the chests
 function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
-        if (cubeBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
-            var x = cube.position.x;
-            var y = cube.position.y;
-            var z = cube.position.z;
+        if (playerModelBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
+            var x = playerModel.position.x;
+            var y = playerModel.position.y;
+            var z = playerModel.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -428,10 +438,10 @@ function checkChestCollisions() {
 // Check for collision with the invisible walls
 function checkInvisibleWallsCollisions() {
     for(let i = 0; i< wallsBoundingBoxes.length; i++){
-        if (cubeBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
-            var x = cube.position.x;
-            var y = cube.position.y;
-            var z = cube.position.z;
+        if (playerModelBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
+            var x = playerModel.position.x;
+            var y = playerModel.position.y;
+            var z = playerModel.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -443,32 +453,32 @@ function checkInvisibleWallsCollisions() {
 
 function handleCollisions(direction) {
     // Store the current position
-    const oldCubePosition = cube.position.clone();
+    const oldPlayerModelPosition = playerModel.position.clone();
     const oldCameraPosition = camera.position.clone();
 
     // Try moving the player in the specified direction
     if (direction === 'forward') {
-        cube.position.z -= moveSpeed;
+        playerModel.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
     } else if (direction === 'backward') {
-        cube.position.z += moveSpeed;
+        playerModel.position.z += moveSpeed;
         camera.position.z += moveSpeed;
     } else if (direction === 'left') {
-        cube.position.x -= moveSpeed;
+        playerModel.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
     } else if (direction === 'right') {
-        cube.position.x += moveSpeed;
+        playerModel.position.x += moveSpeed;
         camera.position.x += moveSpeed;
     }
 
     // Update the bounding box after the attempted movement
-    cubeBoundingBox.setFromObject(cube);
+    playerModelBoundingBox.setFromObject(playerModel);
 
     // Check if the player has collided with the wall or a chest
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
         // If collided, revert to the previous position
         // console.log("I ams stuck");
-        cube.position.copy(oldCubePosition);
+        playerModel.position.copy(oldPlayerModelPosition);
         camera.position.copy(oldCameraPosition);
     }else{
         updatePathTrail();
@@ -477,7 +487,7 @@ function handleCollisions(direction) {
 
 // Update minimap
 function updatePathTrail() {
-    pathPoints.push(new THREE.Vector3(cube.position.x/15, 0, cube.position.z/15));
+    pathPoints.push(new THREE.Vector3(playerModel.position.x/15, 0, playerModel.position.z/15));
     pathGeometry.setFromPoints(pathPoints);
     pathLine.computeLineDistances();
 }
@@ -598,4 +608,3 @@ function render() {
 
 // Initial level setup
 setupLevel(currentLevel);
-render();
