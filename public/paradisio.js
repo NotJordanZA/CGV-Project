@@ -685,6 +685,29 @@ function checkInvisibleWallsCollisions() {
     }
     return false; // No collision
 }
+window.addEventListener('mousemove', function(event) {
+    const mouseX = event.clientX;
+    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
+    const deltaX = wrappedMouseX - previousMouseX;
+    previousMouseX = wrappedMouseX;
+
+    angle += deltaX * rotationSpeed;
+    
+    // Set flashlight position and target based on angle
+    flashHolder.position.x = flashLightDistance * Math.cos(angle);
+    flashHolder.position.z = flashLightDistance * Math.sin(angle);
+    flashHolder.position.y = 2; 
+
+    flashLightTarget.position.x = playerModel.position.x + 10 * flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerModel.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.y = 2;
+
+    // Adjust player orientation to match flashlight direction, with a 45-degree correction
+    if (playerModel) {
+        playerModel.rotation.y = angle + Math.PI / 3; // Adjust by 45 degrees
+    }
+});
+
 
 function handleCollisions(direction) {
     // Store the current position
