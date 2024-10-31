@@ -4,12 +4,14 @@ import { level1Config } from './level1.js';
 import { level2Config } from './level2.js';
 import { level3Config, applyLevel3Lighting} from './level3.js';
 import { item } from './item.js';
+import { biblicalAngel } from './angel.js';
 
 // Set up the canvas and renderer
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
 
 var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.shadowMap.enabled = true;
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor( 0xDDDDDD, 1);
 document.body.appendChild(renderer.domElement);
@@ -69,8 +71,11 @@ let fallSpeed = 0;
 let jumpSpeed = 1;
 let fallJumping = true;
 var darknessTimeout = 100;
-let angelDirection = 2;
+var fallingPlayed = false;
+var playedDeathPopup = false;
+var deathSoundPlayed = false;
 var items = [];
+var angels = [];
 var chests = [
     {x: 190, z:135},
     {x: 250, z:-100},
@@ -115,6 +120,9 @@ function resetLevel() {
     pathPoints = [];
     items = [];
     playerItemCount = 0;
+    fallingPlayed = false;
+    playedDeathPopup = false;
+    deathSoundPlayed = false;
     gameOverMessage.style.opacity = 0;
     vignette.style.opacity = 0;
 
@@ -177,8 +185,6 @@ let paridisioMapTrapped;
 let paridisioChests;
 let paridisioWalls;
 let paridisioWallsBoundingBox;
-let angel;
-
 
 applyLevel3Lighting(scene);
 itemCount = 3;
@@ -330,35 +336,22 @@ flashLight.target = flashLightTarget;
 
 cube.add(flashHolder); // Attach it to the cube
 
-var angelMaterial = new THREE.MeshPhongMaterial({ color: 0x0f0f0f });
-angel = new THREE.Mesh(boxGeometry, angelMaterial);
-angel.position.set(362, -5, 92);
-scene.add(angel);
+// Angel setup
+let angel1 = new biblicalAngel(scene, new THREE.Vector3(-120, 0, 125), new THREE.Vector3(180, 0, 125));
+let angel2 = new biblicalAngel(scene, new THREE.Vector3(-415, 0, -295), new THREE.Vector3(-175, 0, -295));
+let angel3 = new biblicalAngel(scene, new THREE.Vector3(305, 0, -235), new THREE.Vector3(120, 0, -234));
+angels.push(angel1);
+angels.push(angel2);
+angels.push(angel3);
 
-function moveAngel() {
-    // angel.translateZ(trans);
-    if (angel.position.z === -75){
-        angelDirection = 1;
-    }
-    else if (angel.position.z === 258){
-        angelDirection = -1;
-    }
-    angel.position.z += (angelDirection);
-}
+// {x: -113.75, y: 0, z: 122.5}
+// {x: 183.75, y: 0, z: 126.25}
 
-function checkAtAngel() {
-    var x = cube.position.x;
-    var z = cube.position.z;
+// {x: -415, y: 0, z: -295}
+// {x: -175, y: 0, z: -295}
 
-    var distance = Math.sqrt(Math.pow(angel.position.x - x, 2) + Math.pow(angel.position.z - z, 2));
-
-    if (distance <= 10) { 
-        darknessTimeout = -1;
-    }
-}
-
-// { x: 362, y: -5, z: -75 }
-// { x: 362, y: -5, z: 258 }
+// {x: 307.5, y: 0, z: -233.75}
+// {x: 120, y: 0, z: -233.75}
 
 // Check if player is near chest
 function checkAtChest() {
@@ -581,7 +574,6 @@ function handleCollisions(direction) {
         camera.position.copy(oldCameraPosition);
     }else{ // Update minimap
         updatePathTrail();
-        checkAtAngel();
     }
 }
 
@@ -611,11 +603,7 @@ window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-var flickerTimeout = 0;
 var resetLevelTimeout = 10;
-var fallingPlayed = false;
-var playedDeathPopup = false;
-var deathSoundPlayed = false;
 
 function render() {
     if(playerItemCount == itemCount){
@@ -669,6 +657,11 @@ function render() {
         updateBoundingBoxes();
         checkAtChest();
         checkAtItem();
+        angels.forEach(angel => {
+            if(angel.checkAtAngel(cube.position.x, cube.position.z)){
+                darknessTimeout -= 100;
+            }
+        })
     }
 
     if(resetLevelTimeout <= 0){
@@ -686,8 +679,11 @@ function render() {
     if(skyBox){
         skyBox.position.copy(camera.position);
     }
-
-    moveAngel();
+    
+    angels.forEach(angel => {
+        angel.moveAngel();
+        angel.rotateRings();
+    })
 
     requestAnimationFrame(render);
     mapRenderer.render(mapScene, mapCamera);
