@@ -134,8 +134,7 @@ function resetLevel() {
 function setupLevel(level) {
     const levelConfig = levels[level];
     mapScene.add(pathLine);
-    // Update the cube color for this level
-    playerModel.material.color.setHex(levelConfig.playerModelColor);
+    // Update the cube color for this levelw
 
     // Update flashlight color and power for this level
     flashLight.color.setHex(levelConfig.flashLightColor);
