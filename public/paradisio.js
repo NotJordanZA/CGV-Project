@@ -68,6 +68,7 @@ var playerFalling = false;
 let fallSpeed = 0;
 let jumpSpeed = 1;
 let fallJumping = true;
+var gameCompleted = false;
 var darknessTimeout = 100;
 var items = [];
 var chests = [
@@ -82,6 +83,7 @@ const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
+const timeText = document.getElementById('time-text');
 
 
 // Update the vignette intensity based on darknessTimeout
@@ -419,20 +421,22 @@ let angle = -45;
 const rotationSpeed = 0.006;
 
 window.addEventListener('mousemove', function(event) {
-    const mouseX = event.clientX;
-    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
-    const deltaX = wrappedMouseX - previousMouseX;
-    previousMouseX = wrappedMouseX;
+    if(!gameCompleted){
+        const mouseX = event.clientX;
+        const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
+        const deltaX = wrappedMouseX - previousMouseX;
+        previousMouseX = wrappedMouseX;
 
-    angle += deltaX * rotationSpeed;
-    
-    flashHolder.position.x = flashLightDistance * Math.cos(angle);
-    flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
+        angle += deltaX * rotationSpeed;
+        
+        flashHolder.position.x = flashLightDistance * Math.cos(angle);
+        flashHolder.position.z = flashLightDistance * Math.sin(angle);
+        flashHolder.position.y = 2; 
 
-    flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
+        flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
+        flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
+        flashLightTarget.position.y = 2;
+    }
 });
 
 window.addEventListener('keydown', function(event) {
@@ -574,6 +578,20 @@ function updatePlayerPosition() {
     }
 }
 
+function millisToMinutesAndSeconds(millis) {
+    var minutes = Math.floor(millis / 60000);
+    var seconds = Math.floor(((millis % 60000) / 1000).toFixed(0));
+    return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+  }
+
+function displayCompletionTime(){
+    const startTime = parseInt(localStorage.getItem("startTime"));
+    const endTime = Date.now();
+    const totalTime = endTime - startTime;  
+    timeText.innerText = millisToMinutesAndSeconds(totalTime);
+    timeText.style.opacity = 1;
+}
+
 window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
@@ -587,15 +605,10 @@ function render() {
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
-        const startTime = parseInt(localStorage.getItem("startTime"));
-        const endTime = Date.now();
-        const totalTime = endTime - startTime;  
-        let playerInitials = prompt("Enter your 3-letter identifier:");
-        if (playerInitials && playerInitials.length === 3) {
-            playerInitials = playerInitials.toUpperCase();
-        } else {
-            alert("Invalid input! Please enter exactly three letters.");
+        if(!gameCompleted){
+            displayCompletionTime();
         }
+        gameCompleted = true;
     }
     if (atChest || atItem) {
         interactMessage.style.opacity = 1;
@@ -628,7 +641,7 @@ function render() {
         resetLevelTimeout -= 0.03;
         itemTextMessage.style.opacity = 0;
         interactMessage.style.opacity = 0;
-    }else{
+    }else if(!gameCompleted){
         updatePlayerPosition();
         updateBoundingBoxes();
         checkAtChest();
