@@ -600,5 +600,6 @@ function render() {
 }
 
 // Initial level setup
+localStorage.setItem("startTime", Date.now());
 setupLevel(currentLevel);
 render();

@@ -587,7 +587,15 @@ function render() {
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
-        goToLevel(1);
+        const startTime = parseInt(localStorage.getItem("startTime"));
+        const endTime = Date.now();
+        const totalTime = endTime - startTime;  
+        let playerInitials = prompt("Enter your 3-letter identifier:");
+        if (playerInitials && playerInitials.length === 3) {
+            playerInitials = playerInitials.toUpperCase();
+        } else {
+            alert("Invalid input! Please enter exactly three letters.");
+        }
     }
     if (atChest || atItem) {
         interactMessage.style.opacity = 1;
