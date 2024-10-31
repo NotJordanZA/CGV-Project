@@ -69,6 +69,7 @@ let fallSpeed = 0;
 let jumpSpeed = 1;
 let fallJumping = true;
 var darknessTimeout = 100;
+let angelDirection = 2;
 var items = [];
 var chests = [
     {x: 190, z:135},
@@ -176,6 +177,7 @@ let paridisioMapTrapped;
 let paridisioChests;
 let paridisioWalls;
 let paridisioWallsBoundingBox;
+let angel;
 
 
 applyLevel3Lighting(scene);
@@ -327,6 +329,36 @@ scene.add(flashLightTarget);
 flashLight.target = flashLightTarget;
 
 cube.add(flashHolder); // Attach it to the cube
+
+var angelMaterial = new THREE.MeshPhongMaterial({ color: 0x0f0f0f });
+angel = new THREE.Mesh(boxGeometry, angelMaterial);
+angel.position.set(362, -5, 92);
+scene.add(angel);
+
+function moveAngel() {
+    // angel.translateZ(trans);
+    if (angel.position.z === -75){
+        angelDirection = 1;
+    }
+    else if (angel.position.z === 258){
+        angelDirection = -1;
+    }
+    angel.position.z += (angelDirection);
+}
+
+function checkAtAngel() {
+    var x = cube.position.x;
+    var z = cube.position.z;
+
+    var distance = Math.sqrt(Math.pow(angel.position.x - x, 2) + Math.pow(angel.position.z - z, 2));
+
+    if (distance <= 10) { 
+        darknessTimeout = -1;
+    }
+}
+
+// { x: 362, y: -5, z: -75 }
+// { x: 362, y: -5, z: 258 }
 
 // Check if player is near chest
 function checkAtChest() {
@@ -549,6 +581,7 @@ function handleCollisions(direction) {
         camera.position.copy(oldCameraPosition);
     }else{ // Update minimap
         updatePathTrail();
+        checkAtAngel();
     }
 }
 
@@ -582,6 +615,7 @@ var flickerTimeout = 0;
 var resetLevelTimeout = 10;
 var fallingPlayed = false;
 var playedDeathPopup = false;
+var deathSoundPlayed = false;
 
 function render() {
     if(playerItemCount == itemCount){
@@ -612,8 +646,18 @@ function render() {
                 playedDeathPopup = true;
             }
         }else{
-            showGameOverScreen();
-            deathPopupSound.play();
+            if(!deathSoundPlayed){
+                deathSoundPlayed = true;
+                deathSound.play();
+            }
+            if(!playedDeathPopup){
+                var deathPopupTimer = null;
+                deathPopupTimer = setTimeout(() => {
+                    showGameOverScreen();
+                    deathPopupSound.play();
+                }, 2000);
+                playedDeathPopup = true;
+            }
         }
         flashTimeout = 0;
         bounceTimeout = 0;
@@ -642,6 +686,8 @@ function render() {
     if(skyBox){
         skyBox.position.copy(camera.position);
     }
+
+    moveAngel();
 
     requestAnimationFrame(render);
     mapRenderer.render(mapScene, mapCamera);
