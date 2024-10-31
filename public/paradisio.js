@@ -219,6 +219,105 @@ gltfLoader.load('./assets/level3/cgv-heaven-walls.glb', (gltf) => {
     console.error('An error happened while loading the paridisioMap:', error);
 });
 
+const listener = new THREE.AudioListener();
+camera.add( listener );
+const deathPopupSound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+audioLoader.load( './assets/soundeffects/you-died-sting.mp3', function( buffer ) {
+	deathPopupSound.setBuffer( buffer );
+	deathPopupSound.setVolume( 0.5 );
+});
+
+const deathSound = new THREE.Audio( listener );
+audioLoader.load( './assets/soundeffects/death-moan.mp3', function( buffer ) {
+	deathSound.setBuffer( buffer );
+	deathSound.setVolume( 0.5 );
+});
+
+const fallingSound = new THREE.Audio( listener );
+audioLoader.load( './assets/soundeffects/death-falling.mp3', function( buffer ) {
+	fallingSound.setBuffer( buffer );
+    fallingSound.playbackRate = 0.5;
+    fallingSound.detune += 1600;
+    fallingSound.setLoop(false);
+	fallingSound.setVolume( 0.5 );
+});
+//sounds
+const parrunningSound = new THREE.Audio(listener);
+
+audioLoader.load('./assets/soundeffects/paradiso-running.mp3', function(buffer) {
+    parrunningSound.setBuffer(buffer);
+    parrunningSound.setLoop(true);
+    parrunningSound.setVolume(1.0);
+}, undefined, (error) => {
+    console.error('Error loading sound:', error);
+
+});
+//Object sound
+const parobjectSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/objectsound.mp3', function(buffer) {
+    parobjectSound.setBuffer(buffer);
+    parobjectSound.setLoop(false);
+    parobjectSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading  object sound:', error);
+});
+//chest sound
+const parchestSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/chestsound.mp3', function(buffer) {
+    parchestSound.setBuffer(buffer);
+    parchestSound.setLoop(false);
+    parchestSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading chest sound:', error);
+});
+//key sound
+const parkeySound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/keysound.mp3', (buffer) => {
+    parkeySound.setBuffer(buffer);
+    parkeySound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading key sound:', error);
+});
+//water drop sound
+const pardropSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/drop-sound.mp3', function(buffer) {
+    pardropSound.setBuffer(buffer);
+    pardropSound.setLoop(false);
+    pardropSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading drop sound:', error);
+});
+
+//heart/victory sound
+const parheartSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/heartvictorysound.mp3', function(buffer) {
+    parheartSound.setBuffer(buffer);
+    parheartSound.setLoop(false);
+    parheartSound.setVolume(0.8);
+}, undefined, (error) => {
+    console.error('Error loading heart/victory sound:', error);
+});
+
+const paradisoWallSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/paradiso-walls.mp3', (buffer) => {
+    paradisoWallSound .setBuffer(buffer);
+    paradisoWallSound .setVolume(0.8);
+}, undefined, (error) => {
+    console.error('Error loading wall collision sound:', error);
+});
+
+
+
+window.addEventListener('click', () => {
+    if (parrunningSound.context.state === 'suspended') {
+        parrunningSound.context.resume().then(() => {
+            console.log('Audio context resumed');
+        });
+    }
+});
+
+
 // Chest light setup
 for(i = 0; i < chests.length; i++){
     var chestLight  = new THREE.PointLight(0xb8860b, 2000);
@@ -377,9 +476,37 @@ function interactWithObject(){
         darknessTimeout = 0;
         playerFalling = true;
     }else if(atItem){
+        const currentItem = checkAtItem(); // Get the item object the player is interacting with
         playerItemCount++;
         removeItem(checkAtItem());
+
+        const modelPath = currentItem.modelPath.toLowerCase();
+
+        if (modelPath.includes("key")) {
+            console.log("Playing key sound for item with key in modelPath");
+            if (!parkeySound.isPlaying) {
+                parkeySound.play();
+            }
+        } else if (modelPath.includes("heart")) {
+            console.log("Playing heart sound for item with heart in modelPath");
+            if (!parheartSound.isPlaying) {
+                parheartSound.play();
+            }
+    
+}else if (modelPath.includes("drop")) {
+    console.log("Playing drop sound for item withdrop in modelPath");
+    if (!pardropSound.isPlaying) {
+        pardropSound.play();
     }
+
+} 
+     else {
+        console.log("Playing default object sound");
+        if (!parobjectSound.isPlaying) {
+            parobjectSound.play();
+        }
+}
+}
 }
 
 // Movement and control variables
@@ -393,7 +520,64 @@ var flashLightDistance = 10;
 let previousMouseX = window.innerWidth / 2;
 let angle = -45;
 const rotationSpeed = 0.006;
+let isRunning=false//sound
 
+function parupdateRunningSound() {
+    console.log(`Update Sound - Forward: ${moveForward}, Backward: ${moveBackward}, Left: ${moveLeft}, Right: ${moveRight}`);
+    if ((moveForward || moveBackward || moveLeft || moveRight) && !parrunningSound.isPlaying) {
+        parrunningSound.play(); // Start sound
+        console.log("Running sound started");
+        isRunning = true;
+    } else if (!moveForward && !moveBackward && !moveLeft && !moveRight && parrunningSound.isPlaying) {
+        parrunningSound.stop(); // Stop sound
+        console.log("Running sound stopped");
+        isRunning = false;
+    }
+}
+function parplayObjectSoundIfNearItem() {
+    const playerPosition = cube.position;
+    const distanceThreshold = 140; //how close the player needs to be to trigger the sound
+
+    let isNearItem = false;
+
+    for (let i = 0; i < items.length; i++) {
+        const itemPosition = items[i].position;
+        const distance = playerPosition.distanceTo(itemPosition);
+
+        if (distance <= distanceThreshold) {
+            isNearItem = true;
+            break;
+        }
+    }
+
+    if (isNearItem && !parobjectSound.isPlaying) {
+        parobjectSound.play();
+    } else if (!isNearItem && parobjectSound.isPlaying) {
+        parobjectSound.stop(); // Stop the sound if the player moves away
+    }
+}
+function parplayChestSoundIfNearChest() {
+    const playerPosition = cube.position;
+    const chestDistanceThreshold = 70;
+    let isNearChest = false;
+
+    for (let i = 0; i < chests.length; i++) {
+        const chestPosition = new THREE.Vector3(chests[i].x, 0, chests[i].z);
+        const distance = playerPosition.distanceTo(chestPosition);
+
+        if (distance <= chestDistanceThreshold) {
+            isNearChest = true;
+            break;
+        }
+    }
+
+    // Play sound if near a chest, stop if moved away
+    if (isNearChest && !parchestSound.isPlaying) {
+        parchestSound.play();
+    } else if (!isNearChest && parchestSound.isPlaying) {
+        parchestSound.stop();
+    }
+}
 window.addEventListener('mousemove', function(event) {
     const mouseX = event.clientX;
     const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
@@ -425,7 +609,7 @@ window.addEventListener('keydown', function(event) {
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
-    }
+    }parupdateRunningSound();
 });
 
 window.addEventListener('keyup', function(event) {
@@ -434,7 +618,7 @@ window.addEventListener('keyup', function(event) {
         case 's': moveBackward = false; break;
         case 'a': moveLeft = false; break;
         case 'd': moveRight = false; break;
-    }
+    }parupdateRunningSound();
 });
 
 var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
@@ -523,6 +707,11 @@ function handleCollisions(direction) {
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
         cube.position.copy(oldCubePosition);
         camera.position.copy(oldCameraPosition);
+        //Play sound when collide with walls
+        if (!paradisoWallSound.isPlaying) {
+            paradisoWallSound.play();
+        }
+    
     }else{ // Update minimap
         updatePathTrail();
     }
@@ -556,6 +745,8 @@ window.addEventListener('resize', function() {
 
 var flickerTimeout = 0;
 var resetLevelTimeout = 10;
+var fallingPlayed = false;
+var playedDeathPopup = false;
 
 function render() {
     if(playerItemCount == itemCount){
@@ -569,11 +760,25 @@ function render() {
         interactMessage.style.opacity = 0;
     }
 
-
     if (darknessTimeout <= 0) {
-        showGameOverScreen();
+        
         if(playerFalling){
             fallingPlayer();
+            if(!fallingPlayed){
+                fallingPlayed = true;
+                fallingSound.play();
+            }
+            if(!playedDeathPopup){
+                var deathPopupTimer = null;
+                deathPopupTimer = setTimeout(() => {
+                    showGameOverScreen();
+                    deathPopupSound.play();
+                }, 2000);
+                playedDeathPopup = true;
+            }
+        }else{
+            showGameOverScreen();
+            deathPopupSound.play();
         }
         flashTimeout = 0;
         bounceTimeout = 0;
@@ -585,6 +790,8 @@ function render() {
         updateBoundingBoxes();
         checkAtChest();
         checkAtItem();
+        parplayObjectSoundIfNearItem();
+        parplayChestSoundIfNearChest();
     }
 
     if(resetLevelTimeout <= 0){

@@ -94,6 +94,11 @@ function updateHearts() {
         document.getElementById('game-over-message2').style.opacity = '1';
         const vignetteIntensity = THREE.MathUtils.clamp(1 , 0, 1);
         updateVignetteIntensity(vignetteIntensity);
+        var deathPopupTimer = null;
+        deathPopupTimer = setTimeout(() => {
+            showGameOverScreen();
+            deathPopupSound.play();
+        }, 1800);
         
       }
       
@@ -324,7 +329,24 @@ gltfLoader.load('./assets/purgatory/Ghost.glb', (gltf) => {
     console.error('An error happened while loading the purgatoryGhosts:', error);
 });
 
+const listener = new THREE.AudioListener();
+camera.add( listener );
+const deathPopupSound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+audioLoader.load( './assets/soundeffects/you-died-sting.mp3', function( buffer ) {
+	deathPopupSound.setBuffer( buffer );
+	deathPopupSound.setVolume( 0.5 );
+});
 
+const deathSound = new THREE.Audio( listener );
+audioLoader.load( './assets/soundeffects/death-moan.mp3', function( buffer ) {
+	deathSound.setBuffer( buffer );
+    deathSound.playbackRate = 0.5;
+    deathSound.detune += 1200;
+	deathSound.setVolume( 0.5 );
+});
+
+// Chests lights setup
 for(i = 0; i < chests.length; i++){
     var ghostLight  = new THREE.PointLight(0xf76628, 1000);
     ghostLight.position.set(chests[i].x, 15,  chests[i].z);
@@ -671,8 +693,10 @@ window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// var flickerTimeout = 0;
-// var resetLevelTimeout = 10;
+
+var resetLevelTimeout = 10;
+var playedDeathPopup = false;
+var deathSoundPlayed = false;
 
 function render() {
     if(playerItemCount == itemCount){
@@ -739,12 +763,7 @@ function render() {
         //   if(purgatoryGhosts){
         //      moveGhost();
         //   }
-         
-    
-
     // }
-
-
     for(i = 0; i< items.length; i++){
         items[i].itemGroup.rotation.y+=0.025;
     }
