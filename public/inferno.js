@@ -11,7 +11,7 @@ var HEIGHT = window.innerHeight;
 
 var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(WIDTH, HEIGHT);
-renderer.setClearColor(0xFFFFFF, 1);
+renderer.setClearColor(0xDDDDDD, 1);
 document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
 
@@ -180,7 +180,7 @@ let infernoWalls;
 let infernoWallsBoundingBox;
 var floorBoundingBox = new THREE.Box3();
 itemCount = 3;
-scene.background = new THREE.Color( 0xFFFFFF );
+scene.background = new THREE.Color( 0x000000 );
 const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
     // Add the loaded infernoMap to the scene
