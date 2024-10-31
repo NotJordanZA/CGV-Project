@@ -363,7 +363,7 @@ var moveSpeed = 0.75;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2; // Start in the middle
-let angle = -45;
+let angle = 0;
 const rotationSpeed = 0.006; // Speed of arc rotation
 
 window.addEventListener('mousemove', function(event) {

@@ -524,7 +524,7 @@ var moveSpeed = 1.25;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2;
-let angle = -45;
+let angle = 0;
 const rotationSpeed = 0.006;
 let isRunning=false//sound
 
