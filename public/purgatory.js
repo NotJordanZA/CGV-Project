@@ -362,7 +362,7 @@ var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
-var moveSpeed = 4;
+var moveSpeed = 0.75;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2; // Start in the middle
