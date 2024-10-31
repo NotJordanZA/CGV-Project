@@ -25,7 +25,7 @@ var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
 const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
     playerModel = gltf.scene;
-    playerModel.scale.set(5, 5, 5); // Adjust scale as needed
+    playerModel.scale.set(1, 1, 1); // Adjust scale as needed
     playerModel.position.set(0, 0, 0);
     playerModel.rotateY(Math.PI);
     scene.add(playerModel);
