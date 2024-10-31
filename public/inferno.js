@@ -11,7 +11,7 @@ var HEIGHT = window.innerHeight;
 
 var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(WIDTH, HEIGHT);
-renderer.setClearColor(0xDDDDDD, 1);
+renderer.setClearColor(0xFFFFFF, 1);
 document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
 
@@ -180,7 +180,7 @@ let infernoWalls;
 let infernoWallsBoundingBox;
 var floorBoundingBox = new THREE.Box3();
 itemCount = 3;
-scene.background = new THREE.Color( 0x000000 );
+scene.background = new THREE.Color( 0xFFFFFF );
 const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
     // Add the loaded infernoMap to the scene
@@ -358,50 +358,58 @@ function checkAtChest() {
         }
     }
 }
+
+let infObjectSoundPlayed = false;
+
 function playObjectSoundIfNearItem() {
     const playerPosition = cube.position;
-    const distanceThreshold = 160; //how close the player needs to be to trigger the sound
+    const distanceThreshold = 100; // how close the player needs to be to trigger the sound
 
-    let infisNearItem = false;
+    let isNearItem = false;
 
     for (let i = 0; i < items.length; i++) {
         const itemPosition = items[i].position;
         const distance = playerPosition.distanceTo(itemPosition);
 
         if (distance <= distanceThreshold) {
-            infisNearItem = true;
+            isNearItem = true;
             break;
         }
     }
 
-    if (infisNearItem && !infobjectSound.isPlaying) {
+    // Play sound if near an item and 15 seconds have passed since the last play
+    if (isNearItem && !infObjectSoundPlayed) {
         infobjectSound.play();
-    } else if (!infisNearItem && infobjectSound.isPlaying) {
-        infobjectSound.stop(); // Stop the sound if the player moves away
+        infObjectSoundPlayed = true;
+
+        // Set a 15-second timer to allow the sound to play again
+        setTimeout(() => {
+            infObjectSoundPlayed = false;
+        }, 20000); //20 seconds
     }
 }
+
+
+// Initialize chest play states for each chest with a default of `false`
+
+let chestPlayStates = chests.map(() => ({ isPlayed: false }));
+
 function playChestSoundIfNearChest() {
     const playerPosition = cube.position;
-    const chestDistanceThreshold = 100;
-    let infisNearChest = false;
+    const chestDistanceThreshold = 70;
 
-    for (let i = 0; i < chests.length; i++) {
-        const chestPosition = new THREE.Vector3(chests[i].x, 0, chests[i].z);
+    chests.forEach((chest, index) => {
+        const chestPosition = new THREE.Vector3(chest.x, 0, chest.z);
         const distance = playerPosition.distanceTo(chestPosition);
 
-        if (distance <= chestDistanceThreshold) {
-            infisNearChest = true;
-            break;
+        // Play the sound only if the player is within range and the sound hasn't played for this chest yet
+        if (distance <= chestDistanceThreshold && !chestPlayStates[index].isPlayed) {
+            infchestSound.play();
+            chestPlayStates[index].isPlayed = true; // Mark as played to prevent re-triggering
         }
-    }
-
-    // Play sound if near a chest, stop if moved away
-    if (infisNearChest && !infchestSound.isPlaying) {
-        infchestSound.play();
-    } else if (!infisNearChest && infchestSound.isPlaying) {
-        infchestSound.stop();
-    }
+    });
 }
+
 
 // Check if player is near item
 function checkAtItem() {
@@ -444,7 +452,7 @@ function interactWithObject(){
     }else if(atItem){
         const currentItem = checkAtItem(); // Get the item object the player is interacting with
             playerItemCount++;
-            console.log("Pcount ", playerItemCount);
+          
             removeItem(currentItem);
             const modelPath = currentItem.modelPath.toLowerCase();
             // Check item type instead of modelPath
@@ -459,6 +467,11 @@ function interactWithObject(){
                     if (!infscrollSound.isPlaying) {
                         infscrollSound.play();
                     }
+                } else{
+                    if (!infchainSound.isPlaying) {
+                    infchainSound.play();
+
+                }
 
                 
             // } else if (currentItem.getType() === "chain") {

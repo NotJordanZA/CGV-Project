@@ -559,9 +559,11 @@ function parupdateRunningSound() {
         isRunning = false;
     }
 }
+let parObjectSoundPlayed = false;
+
 function parplayObjectSoundIfNearItem() {
     const playerPosition = cube.position;
-    const distanceThreshold = 140; //how close the player needs to be to trigger the sound
+    const distanceThreshold = 100; // how close the player needs to be to trigger the sound
 
     let isNearItem = false;
 
@@ -575,34 +577,42 @@ function parplayObjectSoundIfNearItem() {
         }
     }
 
-    if (isNearItem && !parobjectSound.isPlaying) {
+    // Play sound if near an item and 15 seconds have passed since the last play
+    if (isNearItem && !parObjectSoundPlayed) {
         parobjectSound.play();
-    } else if (!isNearItem && parobjectSound.isPlaying) {
-        parobjectSound.stop(); // Stop the sound if the player moves away
+        parObjectSoundPlayed = true;
+
+        // Set a 15-second timer to allow the sound to play again
+        setTimeout(() => {
+            parObjectSoundPlayed = false;
+        }, 20000); //20 seconds
     }
 }
+
+
+// Initialize chest play states for each chest with a default of `false`
+
+let chestPlayStates = chests.map(() => ({ isPlayed: false }));
+
 function parplayChestSoundIfNearChest() {
     const playerPosition = cube.position;
     const chestDistanceThreshold = 70;
-    let isNearChest = false;
 
-    for (let i = 0; i < chests.length; i++) {
-        const chestPosition = new THREE.Vector3(chests[i].x, 0, chests[i].z);
+    chests.forEach((chest, index) => {
+        const chestPosition = new THREE.Vector3(chest.x, 0, chest.z);
         const distance = playerPosition.distanceTo(chestPosition);
 
-        if (distance <= chestDistanceThreshold) {
-            isNearChest = true;
-            break;
+        // Play the sound only if the player is within range and the sound hasn't played for this chest yet
+        if (distance <= chestDistanceThreshold && !chestPlayStates[index].isPlayed) {
+            parchestSound.play();
+            chestPlayStates[index].isPlayed = true; // Mark as played to prevent re-triggering
         }
-    }
-
-    // Play sound if near a chest, stop if moved away
-    if (isNearChest && !parchestSound.isPlaying) {
-        parchestSound.play();
-    } else if (!isNearChest && parchestSound.isPlaying) {
-        parchestSound.stop();
-    }
+    });
 }
+
+
+    
+
 window.addEventListener('mousemove', function(event) {
     const mouseX = event.clientX;
     const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
