@@ -15,6 +15,8 @@ renderer.setClearColor(0xDDDDDD, 1);
 document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
 
+let hearts = 5;
+
 var aspect = WIDTH / HEIGHT;
 var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
@@ -64,7 +66,7 @@ var atChest = false;
 var atItem = false;
 var playerItemCount = 0;
 var itemCount;
-var darknessTimeout = 100;
+//var darknessTimeout = 100;
 var items = [];
 var chests = [
     {x: -324, z: -1212},
@@ -72,20 +74,78 @@ var chests = [
     {x: 628, z: -728},
 ];
 
+
+
 const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
+const chestTextMessage = document.getElementById('chest-text');
 
 
-// Update the vignette intensity based on darknessTimeout
-function updateVignetteIntensity(intensity) {
-    vignette.style.opacity = intensity; // Set opacity between 0 and 1
-}
+function updateHearts() {
+    const heartContainer = document.getElementById('heart-container');
+    heartContainer.innerHTML = ''; // Clear previous hearts
+  
+    for (let i = 0; i < hearts; i++) {
+      const heartImg = document.createElement('img');
+      heartImg.src = 'assets/purgatory/heart.png';
+      heartImg.className = 'heart';
+      heartContainer.appendChild(heartImg);
+    }
+  }
+
+  // Reduce hearts over time
+function startHeartTimer() {
+    setInterval(() => {
+      if (hearts > 0) {
+        hearts -= 1;
+        updateHearts();
+      }
+  
+      // If no hearts left, trigger game over
+      if (hearts === 0) {
+        document.getElementById('game-over-message').style.opacity = '1';
+        const vignetteIntensity = THREE.MathUtils.clamp(1 , 0, 1);
+        updateVignetteIntensity(vignetteIntensity);
+      }
+    }, 30000); // 30 seconds
+  }
+  
+  // Handle chest interaction to restore heart
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'e' || event.key === 'E') {
+      // Assuming you have logic to check if the player is near a chest
+      const nearChest = true; // Update this based on your game logic
+  
+    }
+  });
+  
+  // Initialize hearts and start the timer
+  updateHearts();
+  startHeartTimer();
+
+// // Update the vignette intensity based on darknessTimeout
+ function updateVignetteIntensity(intensity) {
+     vignette.style.opacity = intensity; // Set opacity between 0 and 1
+ }
 
 function showGameOverScreen() {
     gameOverMessage.style.opacity = 1; // Fade in the "You Died" message
 }
+
+function displayChestMessage() {
+    chestTextMessage.innerText = "You found a chest! +1 Life";
+    chestTextMessage.style.opacity = 1;
+    hearts += 1;
+    updateHearts();
+    // Hide the message after a few seconds
+    setTimeout(() => {
+        chestTextMessage.style.opacity = 0;
+    }, 5000);
+}
+
+
 
 function resetLevel() {
     cube.position.copy(initialCubePosition);
@@ -96,16 +156,17 @@ function resetLevel() {
     })
     
     camera.lookAt(0, 0, 0);  // Make sure camera is looking at the correct point
-    flashTimeout = 5000;
-    bounceTimeout = 100;
-    darknessTimeout = 100;
+    // flashTimeout = 5000;
+    // bounceTimeout = 100;
+    // darknessTimeout = 100;
     mapScene.clear();
     pathPoints = [];
     items = [];
     playerItemCount = 0;
     gameOverMessage.style.opacity = 0;
     vignette.style.opacity = 0;
-
+    updateHearts();
+    startHeartTimer();
     // Optional: Reset any other elements such as lights, textures, etc.
     setupLevel(currentLevel); // Reapply the level configurations
     console.log("Level reset to its original configuration.");
@@ -153,7 +214,7 @@ function setupLevel(level) {
 function goToLevel(level) {
     switch(level){
         case 0:
-            location.href = 'inferno.html';
+            location.href = 'purgatory.html';
             break;
         case 1:
             location.href = 'purgatory.html';
@@ -165,7 +226,7 @@ function goToLevel(level) {
 }
 
 let purgatoryMap;
-let infernoChests;
+let purgatoryChests;
 let purgatoryWalls;
 let purgatoryWallsBoundingBox;
 
@@ -187,17 +248,7 @@ gltfLoader.load('./assets/purgatory/cgv-purgatory-map-baked-mesh.glb', (gltf) =>
 }, undefined, (error) => {
     console.error('An error happened while loading the purgatoryMap:', error);
 });
-gltfLoader.load('./assets/inferno/cgv-inferno-map-chests-mesh.glb', (gltf) => {
-    // Add the loaded infernoMap to the scene
-    infernoChests = gltf.scene;
-    // Position the infernoMap to the right of the plane
-    infernoChests.rotation.y = -Math.PI / 2;
-    infernoChests.scale.set(50,50,50);
-    infernoChests.position.set(0, -10, 0); // Adjust the position as needed
-    scene.add(infernoChests);
-}, undefined, (error) => {
-    console.error('An error happened while loading the infernoMap:', error);
-});
+
 gltfLoader.load('./assets/purgatory/cgv-purgatory-walls.glb', (gltf) => {
     purgatoryWalls = gltf.scene;
     purgatoryWalls.rotation.y = -Math.PI / 2;
@@ -205,7 +256,7 @@ gltfLoader.load('./assets/purgatory/cgv-purgatory-walls.glb', (gltf) => {
     purgatoryWalls.position.set(6, -10, 6); // Adjust the position as needed
     purgatoryWallsBoundingBox = new THREE.Box3().setFromObject(purgatoryWalls);
 }, undefined, (error) => {
-    console.error('An error happened while loading the infernoMap:', error);
+    console.error('An error happened while loading the purgatoryMap:', error);
 });
 
 for(i = 0; i < chests.length; i++){
@@ -226,8 +277,8 @@ scene.add(cube);
 var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
 var flashHolder = new THREE.Mesh(flashGeometry, phongMaterial);
 
-var flashTimeout = 5000;
-var bounceTimeout = 100;
+// var flashTimeout = 1000;
+// var bounceTimeout = 100;
 
 var flashLight = new THREE.SpotLight(0xffe394, 5000, 0, Math.PI / 4, 1, 2);
 flashLight.position.set(0, 0, 0); // Position it at the cube's location
@@ -295,22 +346,23 @@ function displayItemMessage(item) {
     }, 10000);
 }
 
-function interactWithObject(){
-    if(atChest){
-        flashTimeout = 5000;
-        bounceTimeout = 100;
-    }else if(atItem){
+function interactWithObject() {
+    if (atChest) {
+        displayChestMessage();
+        
+    } else if (atItem) {
         playerItemCount++;
         removeItem(checkAtItem());
     }
 }
+
 
 // Movement and control variables
 var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
-var moveSpeed = 0.75;
+var moveSpeed = 4;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2; // Start in the middle
@@ -337,7 +389,7 @@ window.addEventListener('mousemove', function(event) {
     flashLightTarget.position.y = 2;
 });
 
-var darknessTimeout = 100;
+// var darknessTimeout = 100;
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1': goToLevel(0); break; // Move to Level 1
@@ -349,9 +401,9 @@ window.addEventListener('keydown', function(event) {
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
         case 'p': console.log(cube.position); break;
-        case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
+        // case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
-        case 'x': flashTimeout = 99; darknessTimeout=10; break;
+        // case 'x': flashTimeout = 99; darknessTimeout=10; break;
     }
 });
 
@@ -373,8 +425,8 @@ function updateBoundingBoxes() {
     // Update player's bounding box
     cubeBoundingBox.setFromObject(cube);
 
-    if (infernoChests && chestsBoundingBoxes.length < 1000) {
-        infernoChests.traverse((child) => {
+    if (purgatoryChests && chestsBoundingBoxes.length < 1000) {
+        purgatoryChests.traverse((child) => {
             if (child.isMesh) {
                 const chestBoundingBox = new THREE.Box3().setFromObject(child);
                 chestsBoundingBoxes.push(chestBoundingBox);
@@ -484,8 +536,8 @@ window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-var flickerTimeout = 0;
-var resetLevelTimeout = 10;
+// var flickerTimeout = 0;
+// var resetLevelTimeout = 10;
 
 function render() {
     if(playerItemCount == itemCount){
@@ -499,66 +551,65 @@ function render() {
         interactMessage.style.opacity = 0;
     }
 
-    if (flashTimeout > 100) {
-        darknessTimeout = 100;
-        if (flickerTimeout === 0 && Math.random() < 0.006){
-            flickerTimeout = 30;
-        }
-        flashTimeout -= 0.9;
-        bounceTimeout -= 0.00018;
-    }else{
-        darknessTimeout -= 0.1;
-    }
-    if (flickerTimeout > 0){
-        flickerTimeout -= 1;
-        switch (flickerTimeout){
-            case 25:
-                flashLight.intensity = 5000;
-                flashLightBounce.intensity = 100;
-            break;
-            case 15:
-                flashLight.intensity = 1;
-                flashLightBounce.intensity = 1;
-            break;
-            case 5:
-                flashLight.intensity = 5000;
-                flashLightBounce.intensity = 100;
-            break;
-            case 1:
-                flashLight.intensity = 1;
-                flashLightBounce.intensity = 1;
-            break;
-        }
-    }
-    else {
-        flashLight.intensity = flashTimeout;
-        flashLightBounce.intensity = bounceTimeout;
-    }
+    // if (flashTimeout > 100) {
+    //     darknessTimeout = 100;
+    //     if (flickerTimeout === 0 && Math.random() < 0.006){
+    //         flickerTimeout = 30;
+    //     }
+    //     flashTimeout -= 0.9;
+    //     bounceTimeout -= 0.00018;
+    // }else{
+    //     darknessTimeout -= 0.1;
+    // }
+    // if (flickerTimeout > 0){
+    //     flickerTimeout -= 1;
+    //     switch (flickerTimeout){
+    //         case 25:
+    //             flashLight.intensity = 5000;
+    //             flashLightBounce.intensity = 100;
+    //         break;
+    //         case 15:
+    //             flashLight.intensity = 1;
+    //             flashLightBounce.intensity = 1;
+    //         break;
+    //         case 5:
+    //             flashLight.intensity = 5000;
+    //             flashLightBounce.intensity = 100;
+    //         break;
+    //         case 1:
+    //             flashLight.intensity = 1;
+    //             flashLightBounce.intensity = 1;
+    //         break;
+    //     }
+    // }
+    // else {
+    //     flashLight.intensity = flashTimeout;
+    //     flashLightBounce.intensity = bounceTimeout;
+    // }
 
 
-    if (darknessTimeout <= 0) {
-        showGameOverScreen();
-        flashTimeout = 0;
-        bounceTimeout = 0;
-        resetLevelTimeout -= 0.03;
-    }else{
-        updatePlayerPosition();
-        updateBoundingBoxes();
-        checkAtChest();
-        checkAtItem();
-    }
+    // if (darknessTimeout <= 0) {
+    //     showGameOverScreen();
+    //     flashTimeout = 0;
+    //     bounceTimeout = 0;
+    //     resetLevelTimeout -= 0.03;
+    // }else{
+         updatePlayerPosition();
+         updateBoundingBoxes();
+         checkAtChest();
+         checkAtItem();
+    // }
 
-    if(resetLevelTimeout <= 0){
-        resetLevelTimeout = 10;
-        resetLevel();
-    }
+    // if(resetLevelTimeout <= 0){
+    //     resetLevelTimeout = 10;
+    //     resetLevel();
+    // }
 
     for(i = 0; i< items.length; i++){
         items[i].itemGroup.rotation.y+=0.025;
     }
 
-    const vignetteIntensity = THREE.MathUtils.clamp(1 - (darknessTimeout / 100), 0, 1);
-    updateVignetteIntensity(vignetteIntensity);
+    
 
     requestAnimationFrame(render);
     mapRenderer.render(mapScene, mapCamera);

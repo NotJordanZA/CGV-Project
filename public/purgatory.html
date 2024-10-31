@@ -58,9 +58,36 @@
         opacity: 0;
         text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
       }
+
+
+      #heart-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      gap: 5px;
+      z-index: 1001; /* Make sure hearts appear on top */
+    }
+
+    .heart {
+      width: 30px;
+      height: 30px;
+    }
+
     </style>
   </head>
+    <div id="heart-container">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+  </div>
   <body>
+
+    <div id="chest-text" style="opacity: 0; position: absolute; top: 50px; left: 50%; transform: translateX(-50%); color: white; font-size: 20px;">
+      Chest interaction message
+    </div>
+    
     <p id="object-interact">Press 'E' to Interact</p>
     <div id="item-text-container">
       <p id="item-text"></p>
