@@ -63,9 +63,11 @@ const levels = [level1Config, level2Config, level3Config];
 let initialCubePosition = new THREE.Vector3(0, 0, 0);
 let initialCameraPosition = new THREE.Vector3(40, 40, 40);
 var atChest = false;
+var atGhost = false;
 var atItem = false;
 var playerItemCount = 0;
 var itemCount;
+var gameOver = false;
 //var darknessTimeout = 100;
 var items = [];
 var chests = [
@@ -78,6 +80,7 @@ var chests = [
 
 const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
+const gameOverMessage2 = document.getElementById('game-over-message2');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
 const chestTextMessage = document.getElementById('chest-text');
@@ -86,7 +89,14 @@ const chestTextMessage = document.getElementById('chest-text');
 function updateHearts() {
     const heartContainer = document.getElementById('heart-container');
     heartContainer.innerHTML = ''; // Clear previous hearts
-  
+    if (hearts === 0) {
+        document.getElementById('game-over-message').style.opacity = '1';
+        document.getElementById('game-over-message2').style.opacity = '1';
+        const vignetteIntensity = THREE.MathUtils.clamp(1 , 0, 1);
+        updateVignetteIntensity(vignetteIntensity);
+        
+      }
+      
     for (let i = 0; i < hearts; i++) {
       const heartImg = document.createElement('img');
       heartImg.src = 'assets/purgatory/heart.png';
@@ -106,6 +116,7 @@ function startHeartTimer() {
       // If no hearts left, trigger game over
       if (hearts === 0) {
         document.getElementById('game-over-message').style.opacity = '1';
+        gameOver = true;
         const vignetteIntensity = THREE.MathUtils.clamp(1 , 0, 1);
         updateVignetteIntensity(vignetteIntensity);
       }
@@ -132,6 +143,7 @@ window.addEventListener('keydown', (event) => {
 
 function showGameOverScreen() {
     gameOverMessage.style.opacity = 1; // Fade in the "You Died" message
+    gameOverMessage2.innerText = "You Died! Press R to Restart";
 }
 
 function displayChestMessage() {
@@ -148,13 +160,16 @@ function displayChestMessage() {
 
 
 function resetLevel() {
+    document.getElementById('game-over-message2').style.opacity = '0';
     cube.position.copy(initialCubePosition);
     camera.position.copy(initialCameraPosition);
 
     items.forEach(item=>{ // Remove items from map
         item.removeThisItem();
     })
-    
+    hearts = 5;
+    updateHearts();
+    startHeartTimer();
     camera.lookAt(0, 0, 0);  // Make sure camera is looking at the correct point
     // flashTimeout = 5000;
     // bounceTimeout = 100;
@@ -229,7 +244,7 @@ let purgatoryMap;
 let purgatoryChests;
 let purgatoryWalls;
 let purgatoryWallsBoundingBox;
-
+const purgatoryGhostsBoundingBox = new THREE.Box3();
 
 var floorBoundingBox = new THREE.Box3();
 itemCount = 3;
@@ -259,10 +274,61 @@ gltfLoader.load('./assets/purgatory/cgv-purgatory-walls.glb', (gltf) => {
     console.error('An error happened while loading the purgatoryMap:', error);
 });
 
+var ghosts = [
+   // {x: -3, z: -44},
+    {x: -776, z :-624},
+    {x: -276, z: -1192},
+    {x: 592, z: -716},
+];
+let purgatoryGhosts;
+
+for(i = 0; i < ghosts.length; i++){
+    var ghostLight  = new THREE.PointLight(0xf76628, 1000);
+    ghostLight.position.set(ghosts[i].x, 15,  ghosts[i].z);
+    scene.add(ghostLight);
+}
+
+gltfLoader.load('./assets/purgatory/Ghost.glb', (gltf) => {
+    purgatoryGhosts = gltf.scene;
+    purgatoryGhosts.scale.set(3, 3, 3); // Scale the purgatoryGhosts model as desired
+    purgatoryGhosts.position.set(-776, 0, -624); // Adjust starting position as needed
+    scene.add(purgatoryGhosts);
+
+    // Set bounding box for the purgatoryGhosts
+    purgatoryGhostsBoundingBox.setFromObject(purgatoryGhosts);
+}, undefined, (error) => {
+    console.error('An error happened while loading the purgatoryGhosts:', error);
+});
+
+gltfLoader.load('./assets/purgatory/Ghost.glb', (gltf) => {
+    purgatoryGhosts = gltf.scene;
+    purgatoryGhosts.scale.set(3, 3, 3); // Scale the purgatoryGhosts model as desired
+    purgatoryGhosts.position.set(-276, 0, -1192); // Adjust starting position as needed
+    scene.add(purgatoryGhosts);
+
+    // Set bounding box for the purgatoryGhosts
+    purgatoryGhostsBoundingBox.setFromObject(purgatoryGhosts);
+}, undefined, (error) => {
+    console.error('An error happened while loading the purgatoryGhosts:', error);
+});
+
+gltfLoader.load('./assets/purgatory/Ghost.glb', (gltf) => {
+    purgatoryGhosts = gltf.scene;
+    purgatoryGhosts.scale.set(3, 3, 3); // Scale the purgatoryGhosts model as desired
+    purgatoryGhosts.position.set(592, 0, -716); // Adjust starting position as needed
+    scene.add(purgatoryGhosts);
+
+    // Set bounding box for the purgatoryGhosts
+    purgatoryGhostsBoundingBox.setFromObject(purgatoryGhosts);
+}, undefined, (error) => {
+    console.error('An error happened while loading the purgatoryGhosts:', error);
+});
+
+
 for(i = 0; i < chests.length; i++){
-    var chestLight  = new THREE.PointLight(0xf76628, 1000);
-    chestLight.position.set(chests[i].x, 15,  chests[i].z);
-    scene.add(chestLight);
+    var ghostLight  = new THREE.PointLight(0xf76628, 1000);
+    ghostLight.position.set(chests[i].x, 15,  chests[i].z);
+    scene.add(ghostLight);
 }
 
 // Cube setup
@@ -310,6 +376,46 @@ function checkAtChest() {
     }
 }
 
+  let lastGhostCollisionTime = 0; // Initialize the time tracker
+  const ghostCollisionCooldown = 3000; // Cooldown period in milliseconds (3 seconds)
+
+//  let ghostSpeed = 0.1; // Speed of the ghost
+//  let ghostDirection = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(); // Random initial direction
+//  const ghostBoundaries = {  minZ: -712, maxZ: -716 }; // Define boundaries for the ghost
+
+//  function moveGhost() {
+//      // Update the ghost's position
+//     checkAtGhost();
+//      purgatoryGhosts.position.add(ghostDirection.clone().multiplyScalar(ghostSpeed));
+
+//      if (purgatoryGhosts.position.z < ghostBoundaries.minZ || purgatoryGhosts.position.z > ghostBoundaries.maxZ) {
+//          ghostDirection.z *= -1; // Reverse direction on Z axis
+//      }
+    
+//  }
+
+// Check if player is near ghost
+function checkAtGhost() {
+    const currentTime = Date.now(); 
+    var x = cube.position.x;
+    var z = cube.position.z;
+
+    atGhost = false;
+
+    for (var i = 0; i < ghosts.length; i++) {
+        var distance = Math.sqrt(Math.pow(ghosts[i].x - x, 2) + Math.pow(ghosts[i].z - z, 2));
+        if (distance <= 10) {  
+         if (currentTime - lastGhostCollisionTime > ghostCollisionCooldown) {
+             hearts -= 1; // Reduce hearts
+             updateHearts(); // Update the display
+             lastGhostCollisionTime = currentTime; // Reset the cooldown timer
+             console.log("Heart lost! Remaining:", hearts);
+         }
+        atGhost = true;
+        break;
+    }
+    }
+}
 
 // Check if player is near item
 function checkAtItem() {
@@ -419,6 +525,7 @@ window.addEventListener('keyup', function(event) {
 var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
 var chestsBoundingBoxes = [];
 var wallsBoundingBoxes = [];
+var ghostBoundingBoxes = [];
 
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
@@ -434,6 +541,15 @@ function updateBoundingBoxes() {
         });
     }
 
+    if (purgatoryGhosts && purgatoryGhostsBoundingBox.length < 1000) {
+        purgatoryGhosts.traverse((child) => {
+            if (child.isMesh) {
+                const chestBoundingBox = new THREE.Box3().setFromObject(child);
+                purgatoryGhostsBoundingBox.push(purgatoryGhostsBoundingBox);
+            }
+        });
+    }
+
     if (purgatoryWalls && wallsBoundingBoxes.length < 5000) {
         purgatoryWalls.traverse((child) => {
             if (child.isMesh) {
@@ -443,6 +559,25 @@ function updateBoundingBoxes() {
         });
     }
 }
+
+// Check for collision with the chests
+function checkGhostCollisions() {  
+    for (let i = 0; i < purgatoryGhostsBoundingBox.length; i++) {
+        if (cubeBoundingBox.intersectsBox(purgatoryGhostsBoundingBox[i])) {
+            var x = cube.position.x;
+            var y = cube.position.y;
+            var z = cube.position.z;
+            if(x<=30 && x>=-30 && z<=30 && z>=-30){
+                return false;
+            }
+            console.log("hi");
+            return true; // Collision detected
+            
+        }
+    }
+    return false; // No collision
+}
+
 // Check for collision with the chests
 function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
@@ -499,7 +634,7 @@ function handleCollisions(direction) {
     cubeBoundingBox.setFromObject(cube);
 
     // Check if the player has collided with the wall or a chest
-    if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
+    if (checkChestCollisions() || checkInvisibleWallsCollisions() || checkGhostCollisions()) {
         // If collided, revert to the previous position
         // console.log("I ams stuck");
         cube.position.copy(oldCubePosition);
@@ -594,16 +729,21 @@ function render() {
     //     bounceTimeout = 0;
     //     resetLevelTimeout -= 0.03;
     // }else{
+
+         
          updatePlayerPosition();
          updateBoundingBoxes();
          checkAtChest();
+         checkAtGhost();
          checkAtItem();
+        //   if(purgatoryGhosts){
+        //      moveGhost();
+        //   }
+         
+    
+
     // }
 
-    // if(resetLevelTimeout <= 0){
-    //     resetLevelTimeout = 10;
-    //     resetLevel();
-    // }
 
     for(i = 0; i< items.length; i++){
         items[i].itemGroup.rotation.y+=0.025;
@@ -618,4 +758,4 @@ function render() {
 
 // Initial level setup
 setupLevel(currentLevel);
-render();
+render();  
