@@ -215,6 +215,25 @@ gltfLoader.load('./assets/inferno/cgv-inferno-map-walls.glb', (gltf) => {
 }, undefined, (error) => {
     console.error('An error happened while loading the infernoMap:', error);
 });
+
+const listener = new THREE.AudioListener();
+camera.add( listener );
+const deathPopupSound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+audioLoader.load( './assets/soundeffects/you-died-sting.mp3', function( buffer ) {
+	deathPopupSound.setBuffer( buffer );
+	deathPopupSound.setVolume( 0.5 );
+});
+
+const deathSound = new THREE.Audio( listener );
+audioLoader.load( './assets/soundeffects/death-moan.mp3', function( buffer ) {
+	deathSound.setBuffer( buffer );
+    deathSound.playbackRate = 0.5;
+    deathSound.detune += 1200;
+	deathSound.setVolume( 0.5 );
+});
+
+
 // Chest light setup
 for(i = 0; i < chests.length; i++){
     var chestLight  = new THREE.PointLight(0xb8860b, 2000);
@@ -488,12 +507,10 @@ window.addEventListener('resize', function() {
 
 var flickerTimeout = 0;
 var resetLevelTimeout = 10;
+var playedDeathPopup = false;
+var deathSoundPlayed = false;
 
 function render() {
-    updatePlayerPosition();
-    updateBoundingBoxes();
-    checkAtChest();
-    checkAtItem();
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
@@ -543,10 +560,26 @@ function render() {
 
 
     if (darknessTimeout <= 0) {
-        showGameOverScreen();
+        if(!deathSoundPlayed){
+            deathSound.play();
+            deathSoundPlayed = true;
+        }
+        if(!playedDeathPopup){
+            var deathPopupTimer = null;
+            deathPopupTimer = setTimeout(() => {
+                showGameOverScreen();
+                deathPopupSound.play();
+            }, 1800);
+            playedDeathPopup = true;
+        }
         flashTimeout = 0;
         bounceTimeout = 0;
         resetLevelTimeout -= 0.03;
+    }else{
+        updatePlayerPosition();
+        updateBoundingBoxes();
+        checkAtChest();
+        checkAtItem();
     }
 
     if(resetLevelTimeout <= 0){
