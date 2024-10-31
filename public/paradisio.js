@@ -219,6 +219,30 @@ gltfLoader.load('./assets/level3/cgv-heaven-walls.glb', (gltf) => {
     console.error('An error happened while loading the paridisioMap:', error);
 });
 
+const listener = new THREE.AudioListener();
+camera.add( listener );
+const deathPopupSound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+audioLoader.load( './assets/soundeffects/you-died-sting.mp3', function( buffer ) {
+	deathPopupSound.setBuffer( buffer );
+	deathPopupSound.setVolume( 0.5 );
+});
+
+const deathSound = new THREE.Audio( listener );
+audioLoader.load( './assets/soundeffects/death-moan.mp3', function( buffer ) {
+	deathSound.setBuffer( buffer );
+	deathSound.setVolume( 0.5 );
+});
+
+const fallingSound = new THREE.Audio( listener );
+audioLoader.load( './assets/soundeffects/death-falling.mp3', function( buffer ) {
+	fallingSound.setBuffer( buffer );
+    fallingSound.playbackRate = 0.5;
+    fallingSound.detune += 1600;
+    fallingSound.setLoop(false);
+	fallingSound.setVolume( 0.5 );
+});
+
 // Chest light setup
 for(i = 0; i < chests.length; i++){
     var chestLight  = new THREE.PointLight(0xb8860b, 2000);
@@ -556,6 +580,8 @@ window.addEventListener('resize', function() {
 
 var flickerTimeout = 0;
 var resetLevelTimeout = 10;
+var fallingPlayed = false;
+var playedDeathPopup = false;
 
 function render() {
     if(playerItemCount == itemCount){
@@ -569,11 +595,25 @@ function render() {
         interactMessage.style.opacity = 0;
     }
 
-
     if (darknessTimeout <= 0) {
-        showGameOverScreen();
+        
         if(playerFalling){
             fallingPlayer();
+            if(!fallingPlayed){
+                fallingPlayed = true;
+                fallingSound.play();
+            }
+            if(!playedDeathPopup){
+                var deathPopupTimer = null;
+                deathPopupTimer = setTimeout(() => {
+                    showGameOverScreen();
+                    deathPopupSound.play();
+                }, 2000);
+                playedDeathPopup = true;
+            }
+        }else{
+            showGameOverScreen();
+            deathPopupSound.play();
         }
         flashTimeout = 0;
         bounceTimeout = 0;
