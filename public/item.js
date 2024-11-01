@@ -29,9 +29,13 @@ export class item {
                 this.itemModel.scale.set(5, 5, 5);
                 this.itemModel.translateY(-2);
             }
-            if(this.modelPath.includes("knife.glb")){
+            if (this.modelPath.includes("knife.glb")){
                 this.itemModel.scale.set(20, 20, 20);
                 this.itemModel.translateY(-10);
+            }
+            if (this.modelPath.includes("mirror.glb")){
+                this.itemModel.scale.set(20, 20, 20);
+                this.itemModel.translateY(-20);
             }
             this.itemGroup.add(this.itemModel);
         }, undefined, (error) => {

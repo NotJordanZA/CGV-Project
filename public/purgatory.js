@@ -101,6 +101,7 @@ function updateHearts() {
     const heartContainer = document.getElementById('heart-container');
     heartContainer.innerHTML = ''; // Clear previous hearts
     if (hearts === 0) {
+        deathSound.play();
         document.getElementById('game-over-message').style.opacity = '1';
         document.getElementById('game-over-message2').style.opacity = '1';
         const vignetteIntensity = THREE.MathUtils.clamp(1 , 0, 1);
@@ -151,11 +152,6 @@ window.addEventListener('keydown', (event) => {
   // Initialize hearts and start the timer
   updateHearts();
   startHeartTimer();
-
-// // Update the vignette intensity based on darknessTimeout
- function updateVignetteIntensity(intensity) {
-     vignette.style.opacity = intensity; // Set opacity between 0 and 1
- }
 
 function showGameOverScreen() {
     gameOverMessage.style.opacity = 1; // Fade in the "You Died" message
@@ -518,23 +514,25 @@ let angle = -45;
 const rotationSpeed = 0.006; // Speed of arc rotation
 
 window.addEventListener('mousemove', function(event) {
-    // Calculate the horizontal mouse movement
-    const mouseX = event.clientX;
-    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
-    const deltaX = wrappedMouseX - previousMouseX;
-    previousMouseX = wrappedMouseX;
+    if(hearts > 0){
+         // Calculate the horizontal mouse movement
+        const mouseX = event.clientX;
+        const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
+        const deltaX = wrappedMouseX - previousMouseX;
+        previousMouseX = wrappedMouseX;
 
-    // Adjust the angle based on mouse movement
-    angle += deltaX * rotationSpeed;
+        // Adjust the angle based on mouse movement
+        angle += deltaX * rotationSpeed;
 
-    // Update the flashHolder position based on the new angle
-    flashHolder.position.x = flashLightDistance * Math.cos(angle);
-    flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
+        // Update the flashHolder position based on the new angle
+        flashHolder.position.x = flashLightDistance * Math.cos(angle);
+        flashHolder.position.z = flashLightDistance * Math.sin(angle);
+        flashHolder.position.y = 2; 
 
-    flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
+        flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
+        flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
+        flashLightTarget.position.y = 2;
+    }
 });
 
 // var darknessTimeout = 100;
@@ -714,7 +712,6 @@ window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-
 var resetLevelTimeout = 10;
 var playedDeathPopup = false;
 var deathSoundPlayed = false;
@@ -763,8 +760,8 @@ function render() {
     //     }
     // }
     // else {
-    //     flashLight.intensity = flashTimeout;
-    //     flashLightBounce.intensity = bounceTimeout;
+    //     flashLight.intensity = levelConfig.flashLightPower;
+    //     flashLightBounce.intensity = 100;
     // }
 
 
@@ -775,12 +772,13 @@ function render() {
     //     resetLevelTimeout -= 0.03;
     // }else{
 
-         
-         updatePlayerPosition();
-         updateBoundingBoxes();
-         checkAtChest();
-         checkAtGhost();
-         checkAtItem();
+    if(hearts > 0){
+        updatePlayerPosition();
+        updateBoundingBoxes();
+        checkAtChest();
+        checkAtGhost();
+        checkAtItem();
+    }
         //   if(purgatoryGhosts){
         //      moveGhost();
         //   }
