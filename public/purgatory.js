@@ -16,7 +16,7 @@ document.body.appendChild(renderer.domElement);
 var scene = new THREE.Scene();
 
 let hearts = 5;
-
+let chestIndex = -1;
 var aspect = WIDTH / HEIGHT;
 var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
@@ -71,9 +71,9 @@ var gameOver = false;
 //var darknessTimeout = 100;
 var items = [];
 var chests = [
-    {x: -324, z: -1212},
-    {x: -756, z: -668},
-    {x: 628, z: -728},
+    {x: -324, z: -1212, collected: false},
+    {x: -756, z: -668, collected: false},
+    {x: 628, z: -728, collected: false},
 ];
 
 
@@ -391,8 +391,9 @@ function checkAtChest() {
     for (var i = 0; i < chests.length; i++) {
         var distance = Math.sqrt(Math.pow(chests[i].x - x, 2) + Math.pow(chests[i].z - z, 2));
 
-        if (distance <= 50) { 
+        if (distance <= 50 && !chests[i].collected) { 
             atChest = true;
+            chestIndex=i;
             break;
         }
     }
@@ -475,9 +476,10 @@ function displayItemMessage(item) {
 }
 
 function interactWithObject() {
-    if (atChest) {
+    if (atChest && chestIndex !== -1) { 
+        chests[chestIndex].collected = true; // Mark the chest as collected
         displayChestMessage();
-        
+        chestIndex = -1; // Reset after collection
     } else if (atItem) {
         playerItemCount++;
         removeItem(checkAtItem());
@@ -490,7 +492,7 @@ var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
-var moveSpeed = 0.75;
+var moveSpeed = 4;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2; // Start in the middle
