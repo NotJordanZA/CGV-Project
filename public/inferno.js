@@ -8,7 +8,7 @@ import { item } from './item.js';
 // Set up the canvas and renderer
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
-
+const clock = new THREE.Clock();
 var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor(0xDDDDDD, 1);
@@ -25,6 +25,8 @@ camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 
 //Load and add model
 var playerModel;
+let mixer;
+let walkAction;
 var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
 const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
@@ -34,6 +36,17 @@ gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
     playerModel.rotateY(Math.PI);
     scene.add(playerModel);
     playerModel.add(flashHolder); // Attach it to the cube
+
+    mixer = new THREE.AnimationMixer(playerModel);
+
+    // Combine all animations into a single walk action
+    const combinedTracks = gltf.animations.reduce((tracks, clip) => {
+        return tracks.concat(clip.tracks);
+    }, []);
+    const walkClip = new THREE.AnimationClip('Walk', -1, combinedTracks);
+    walkAction = mixer.clipAction(walkClip);
+    walkAction.loop = THREE.LoopRepeat;
+
     render();
 }, undefined, (error) => {
     console.error('An error happened while loading the player model:', error);
@@ -690,6 +703,16 @@ function updatePathTrail() {
 }
 
 function updatePlayerPosition() {
+    const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+    // Start the walk animation if moving and not already playing
+    if (isMoving && !walkAction.isRunning()) {
+        walkAction.play();
+    }
+    // Stop the walk animation if not moving
+    else if (!isMoving && walkAction.isRunning()) {
+        walkAction.stop();
+    }
+
     if (moveForward) {
         handleCollisions('forward');
     }
@@ -725,7 +748,10 @@ function render() {
     } else {
         interactMessage.style.opacity = 0;
     }
-
+    if (mixer) {
+        const delta = clock.getDelta(); // Use a THREE.Clock instance to get the delta time
+        mixer.update(delta); // Update the animation mixer
+    }
     if (flashTimeout > 100) {
         darknessTimeout = 10000;
         if (flickerTimeout === 0 && Math.random() < 0.006){
