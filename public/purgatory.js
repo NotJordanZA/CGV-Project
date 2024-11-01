@@ -563,8 +563,8 @@ function checkAtChest() {
 // Check if player is near ghost
 function checkAtGhost() {
     const currentTime = Date.now(); 
-    var x = cube.position.x;
-    var z = cube.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atGhost = false;
 
@@ -694,7 +694,7 @@ function purgatoryupdateRunSound() {
 let purgatoryObjectSoundPlayed = false;
 
 function purgatoryplayObjectSoundIfNearItem() {
-    const playerPosition = cube.position;
+    const playerPosition = playerParent.position;
     const distanceThreshold = 100; // how close the player needs to be to trigger the sound
 
     let isNearItem = false;
@@ -727,7 +727,7 @@ function purgatoryplayObjectSoundIfNearItem() {
 let chestPlayStates2 = chests.map(() => ({ isPlayed: false }));
 
 function purgatoryplayChestSoundIfNearChest() {
-    const playerPosition = cube.position;
+    const playerPosition = playerParent.position;
     const chestDistanceThreshold = 70;
 
     chests.forEach((chest, index) => {
@@ -774,7 +774,7 @@ window.addEventListener('keydown', function(event) {
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
-        case 'p': console.log(cube.position); break;
+        case 'p': console.log(playerParent.position); break;
         // case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'Escape': togglePauseMenu(); break;
@@ -833,9 +833,9 @@ function updateBoundingBoxes() {
 function checkGhostCollisions() {  
     for (let i = 0; i < purgatoryGhostsBoundingBox.length; i++) {
         if (cubeBoundingBox.intersectsBox(purgatoryGhostsBoundingBox[i])) {
-            var x = cube.position.x;
-            var y = cube.position.y;
-            var z = cube.position.z;
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }

@@ -927,7 +927,7 @@ function render() {
         checkAtChest();
         checkAtItem();
         angels.forEach(angel => {
-            if(angel.checkAtAngel(cube.position.x, cube.position.z)){
+            if(angel.checkAtAngel(playerParent.position.x, playerParent.position.z)){
                 darknessTimeout -= 100;
             }
         })
