@@ -352,7 +352,74 @@ audioLoader.load( './assets/soundeffects/death-moan.mp3', function( buffer ) {
     deathSound.detune += 1200;
 	deathSound.setVolume( 0.5 );
 });
+const purgatoryrunSound = new THREE.Audio(listener);
 
+audioLoader.load('./assets/soundeffects/purgatory-walking-onwater.mp3', function(buffer) {
+    purgatoryrunSound.setBuffer(buffer);
+    purgatoryrunSound.setLoop(true);
+    purgatoryrunSound.setVolume(1.0);
+}, undefined, (error) => {
+    console.error('Error loading sound:', error);
+
+});
+const purgatoryWallSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/purgatory-walls-scarysound.mp3', (buffer) => {
+    purgatoryWallSound.setBuffer(buffer);
+    purgatoryWallSound.setVolume(0.8);
+}, undefined, (error) => {
+    console.error('Error loading wall collision sound:', error);
+});
+//Object sound
+const purgatoryobjectSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/objectsound.mp3', function(buffer) {
+    purgatoryobjectSound.setBuffer(buffer);
+    purgatoryobjectSound.setLoop(false);
+    purgatoryobjectSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading  object sound:', error);
+});
+//chest sound
+const  purgatorychestSound= new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/chestsound.mp3', function(buffer) {
+    purgatorychestSound.setBuffer(buffer);
+    purgatorychestSound.setLoop(false);
+    purgatorychestSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading chest sound:', error);
+});
+//key sound
+const purgatorykeySound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/keysound.mp3', (buffer) => {
+    purgatorykeySound.setBuffer(buffer);
+    purgatorykeySound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading key sound:', error);
+});
+//water drop sound
+const purgatorydropSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/drop-sound.mp3', function(buffer) {
+    purgatorydropSound.setBuffer(buffer);
+    purgatorydropSound.setLoop(false);
+    purgatorydropSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading drop sound:', error);
+});
+//mirror sound
+const purgatorymirrorSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/purgatory-broken-mirror.mp3', function(buffer) {
+    purgatorymirrorSound.setBuffer(buffer);
+    purgatorymirrorSound.setLoop(false);
+    purgatorymirrorSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading mirror sound:', error);
+});
+window.addEventListener('click', () => {
+    if (purgatoryrunSound.context.state === 'suspended') {
+        purgatoryrunSound.context.resume().then(() => {
+            console.log('Audio context resumed');
+        });
+    }
+});
 // Chests lights setup
 for(i = 0; i < chests.length; i++){
     var ghostLight  = new THREE.PointLight(0xf76628, 1000);
@@ -488,10 +555,36 @@ function interactWithObject() {
         displayChestMessage();
         chestIndex = -1; // Reset after collection
     } else if (atItem) {
+        const currentItem = checkAtItem(); // Get the item object the player is interacting with
         playerItemCount++;
         removeItem(checkAtItem());
+        const modelPath = currentItem.modelPath.toLowerCase();
+
+        if (modelPath.includes("key")) {
+         
+            if (!purgatorykeySound.isPlaying) {
+                purgatorykeySound.play();
+            }
+        
+}else if (modelPath.includes("drop")) {
+   
+    if (!purgatorydropSound.isPlaying) {
+        purgatorydropSound.play();
     }
-}
+
+} else if (modelPath.includes("mirror")) {
+  
+    if (!purgatorymirrorSound.isPlaying) {
+        purgatorymirrorSound.play();
+    }
+
+      
+       
+        }
+    }
+
+    }
+
 
 function togglePauseMenu(){
     if(pauseMenu.style.opacity == 1){
@@ -514,7 +607,71 @@ var flashLightDistance = 10;
 let previousMouseX = window.innerWidth / 2; // Start in the middle
 let angle = -45;
 const rotationSpeed = 0.006; // Speed of arc rotation
+let isRunning=false//sound
 
+function purgatoryupdateRunSound() {
+ 
+    if ((moveForward || moveBackward || moveLeft || moveRight) && !purgatoryrunSound.isPlaying) {
+        purgatoryrunSound.play(); // Start sound
+      
+        isRunning = true;
+    } else if (!moveForward && !moveBackward && !moveLeft && !moveRight && purgatoryrunSound.isPlaying) {
+        purgatoryrunSound.stop(); // Stop sound
+      
+        isRunning = false;
+    }
+
+}
+let purgatoryObjectSoundPlayed = false;
+
+function purgatoryplayObjectSoundIfNearItem() {
+    const playerPosition = cube.position;
+    const distanceThreshold = 100; // how close the player needs to be to trigger the sound
+
+    let isNearItem = false;
+
+    for (let i = 0; i < items.length; i++) {
+        const itemPosition = items[i].position;
+        const distance = playerPosition.distanceTo(itemPosition);
+
+        if (distance <= distanceThreshold) {
+            isNearItem = true;
+            break;
+        }
+    }
+
+    // Play sound if near an item and 15 seconds have passed since the last play
+    if (isNearItem && !purgatoryObjectSoundPlayed) {
+        purgatoryobjectSound.play();
+        purgatoryObjectSoundPlayed= true;
+
+        // Set a 15-second timer to allow the sound to play again
+        setTimeout(() => {
+            purgatoryObjectSoundPlayed = false;
+        }, 30000); //30 seconds
+    }
+}
+
+
+// Initialize chest play states for each chest with a default of `false`
+
+let chestPlayStates2 = chests.map(() => ({ isPlayed: false }));
+
+function purgatoryplayChestSoundIfNearChest() {
+    const playerPosition = cube.position;
+    const chestDistanceThreshold = 70;
+
+    chests.forEach((chest, index) => {
+        const chestPosition = new THREE.Vector3(chest.x, 0, chest.z);
+        const distance = playerPosition.distanceTo(chestPosition);
+
+        // Play the sound only if the player is within range and the sound hasn't played for this chest yet
+        if (distance <= chestDistanceThreshold && !chestPlayStates2[index].isPlayed) {
+            purgatorychestSound.play();
+            chestPlayStates2[index].isPlayed = true; // Mark as played to prevent re-triggering
+        }
+    });
+}
 window.addEventListener('mousemove', function(event) {
     if(hearts > 0){
          // Calculate the horizontal mouse movement
@@ -553,7 +710,7 @@ window.addEventListener('keydown', function(event) {
         case 'r': resetLevel(); break;
         case 'Escape': togglePauseMenu(); break;
         // case 'x': flashTimeout = 99; darknessTimeout=10; break;
-    }
+    }purgatoryupdateRunSound();
 });
 
 window.addEventListener('keyup', function(event) {
@@ -562,7 +719,7 @@ window.addEventListener('keyup', function(event) {
         case 's': moveBackward = false; break;
         case 'a': moveLeft = false; break;
         case 'd': moveRight = false; break;
-    }
+    }purgatoryupdateRunSound();
 });
 
 var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
@@ -780,6 +937,8 @@ function render() {
         checkAtChest();
         checkAtGhost();
         checkAtItem();
+        purgatoryplayObjectSoundIfNearItem();
+        purgatoryplayChestSoundIfNearChest();
     }
         //   if(purgatoryGhosts){
         //      moveGhost();
