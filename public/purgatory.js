@@ -76,7 +76,12 @@ const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
-
+const pauseMenu = document.getElementById('pause-menu');
+const restartLevelButton = document.getElementById('restart-level-button');
+restartLevelButton.addEventListener("click", () => {
+    resetLevel();
+    togglePauseMenu()
+});
 
 // Update the vignette intensity based on darknessTimeout
 function updateVignetteIntensity(intensity) {
@@ -323,6 +328,16 @@ function interactWithObject(){
     }
 }
 
+function togglePauseMenu(){
+    if(pauseMenu.style.opacity == 1){
+        pauseMenu.style.opacity = 0;
+        pauseMenu.style.pointerEvents = "none";
+    }else{
+        pauseMenu.style.opacity = 1;
+        pauseMenu.style.pointerEvents = "all";
+    }
+}
+
 // Movement and control variables
 var moveForward = false;
 var moveBackward = false;
@@ -370,6 +385,7 @@ window.addEventListener('keydown', function(event) {
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
+        case 'Escape': togglePauseMenu(); break;
     }
 });
 
