@@ -100,14 +100,13 @@ function showGameOverScreen() {
 function displayPlotScreen(){
     var plotScreenTimer = null;
     plotText.innerText = 
-        "Retrieving the third of these forsaken items, you find that the black abyss grows in size; drowning out the light with which you ran from it.\n\n" +
-        "Before you, in the inky void, there lies a form - one more human than you thought you would find here. You step closer, and…\n" +
-        "No… Could it be?\n\n" +
-        "You reach out.\n" +
-        "“Liora? No!”\n" +
-        "She is whisked away, consumed by the black.\n\n" +
-        "Your vision begins to clear, but you find that the infernal heat is no more. Instead, you are surrounded by an overwhelming melancholy, leaving a palpable weight surrounding your body.\n\n" +
-        "Is this… No, it can’t be.";
+        "Black. Your vision is consumed by an inescapable darkness - though your body is gifted no such absence.\n" +
+        "There is a pervasive heat that you feel beyond your skin, as though your innards are in a constant cycle of melting and reconstruction.\n\n" +
+        "The abyss fades; the scalding caresse of the inferno does not.\n\n" +
+        "“Where… am I?”\n\n" +
+        "You wish your confusion was confined to your location. You know nothing.\n" +
+        "Who are you? How did you get here?\n\n" +
+        "There is but one thing that you know to be certain: you cannot let the darkness grab hold of you.";
     plotScreen.style.opacity = 1;
     plotScreenTimer = setTimeout(() => {
         plotScreen.style.opacity = 0;
