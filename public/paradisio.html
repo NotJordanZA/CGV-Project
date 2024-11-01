@@ -67,6 +67,15 @@
         opacity: inherit;
         text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
       }
+      
+      #plot-text {
+        text-align: center; 
+        color: white;
+        font-size: 1.2rem;
+        font-family: serif;
+        opacity: inherit;
+        text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
+      }
 
       #pause-menu{
         width: 100vw;
@@ -136,6 +145,21 @@
         justify-content: center;
         cursor: auto;
       }
+
+      #plot-page{
+        width: 100vw;
+        height: 100vh;
+        opacity: 0;
+        background-color: rgba(0, 0, 0, 1);
+        position: absolute;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: auto;
+        transition: opacity 2s;
+      }
     </style>
   </head>
   <body>
@@ -150,6 +174,9 @@
       <button id="restart-level-button" class="pause-buttons">Restart Level</button>
       <button class="pause-buttons" onclick="location.href = 'inferno.html'">Restart Game</button>
       <button class="pause-buttons" onclick="location.href = 'index.html'">Return to Main Menu</button>
+    </div>
+    <div id="plot-page">
+      <p id="plot-text"></p>
     </div>
     <div id="game-finished-page">
       <p id="game-finished-message">You Win!!!</p>

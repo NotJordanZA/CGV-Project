@@ -93,6 +93,8 @@ const timeText = document.getElementById('time-text');
 const pauseMenu = document.getElementById('pause-menu');
 const restartLevelButton = document.getElementById('restart-level-button');
 const gameFinishedScreen = document.getElementById('game-finished-page');
+const plotText = document.getElementById('plot-text');
+const plotScreen = document.getElementById('plot-page');
 restartLevelButton.addEventListener("click", () => {
     resetLevel();
     togglePauseMenu()
@@ -808,9 +810,34 @@ function displayGameFinishedScreen(){
     const totalTime = endTime - startTime;
     var gameOverScreenTimer = null;
     gameOverScreenTimer = setTimeout(() => {
-        timeText.innerText = "Well done! Your soul is absconded; you took " + millisToMinutesAndSeconds(totalTime) + " to traverse the afterlife!";
+        timeText.innerText = 
+            "A seemingly infinite flight of stairs grows ahead of you. While it may seem to some disquieting that the next point in your journey from heaven lies at the end of a downward descent, you know better - or so you hope.\n\n" +
+            "These steps, you are sure, lead back to your mortal life.\n" +
+            "You are compelled forward, certain that you move towards a second chance.\n\n" +
+            "Even so, for but a moment, your faith waivers. Perhaps your quest has been nothing but a prolonged retreat from your true fate.\n\n" +
+            "You cannot stop yourself from moving onwards, but could you be wrong about what awaits you at the end? Could all of this have been for naught?\n\n" +
+            "Your fate is inescapable; your journey is circular.\n" +
+            "Though, the locale of your homecoming now feels uncertain.\n\n" +
+            "Are you destined for returnal… or are you bound for Inferno?\n\n\n\n" +
+            "Well done! Your soul is absconded; you took " + millisToMinutesAndSeconds(totalTime) + " to traverse the afterlife!";
         gameFinishedScreen.style.opacity = 1;
     }, 10000);  
+}
+
+function displayPlotScreen(){
+    var plotScreenTimer = null;
+    plotText.innerText = 
+        "You are again consumed by darkness, but this sensation is familiar now.\n\n" +
+        "In the depths before you, the body once again lies lifeless. Indeed, it is unmistakable who this is before you.\n" +
+        "“Liora, it is you. I did this, didn’t I?”\n\n" +
+        "You fall to your knees, so overcome with despair that you do not notice your Stygian surroundings fading away.\n" +
+        "You do, however, notice the absence of the overbearing calls to apathy. Gone is the river beneath you that compelled you to give up and drown.\n\n" +
+        "As the sea dries up, it is replaced by a cold, smooth marble. You feel as if your soul, mirroring your surroundings, should be light - but the weight of your sins is too immense.\n\n" +
+        "“Am I… in paradise?”";
+    plotScreen.style.opacity = 1;
+    plotScreenTimer = setTimeout(() => {
+        plotScreen.style.opacity = 0;
+    }, 25000);  
 }
 
 window.addEventListener('resize', function() {
@@ -819,7 +846,13 @@ window.addEventListener('resize', function() {
 
 var resetLevelTimeout = 10;
 
+var atStart = true;
+
 function render() {
+    if (atStart) {
+        atStart = false;
+        displayPlotScreen();
+    }
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
