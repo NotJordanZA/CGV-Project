@@ -47,7 +47,7 @@
         max-width: 60vw;
       }
 
-      #item-text, #object-interact {
+      #item-text, #object-interact{
         position: absolute;
         top: 60%;
         width: 100%;
@@ -58,6 +58,107 @@
         opacity: 0;
         text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
       }
+
+      #time-text {
+        text-align: center; 
+        color: white;
+        font-size: 1.2rem;
+        font-family: serif;
+        opacity: inherit;
+        text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
+      }
+      
+      #plot-text {
+        text-align: center; 
+        color: white;
+        font-size: 1.2rem;
+        font-family: serif;
+        opacity: inherit;
+        text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
+      }
+
+      #pause-menu{
+        width: 100vw;
+        height: 100vh;
+        opacity: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        pointer-events:none;
+        position: absolute;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        cursor:auto;
+      }
+
+      .pause-buttons{
+        font-family: serif;
+        text-align: center; 
+        color: white;
+        font-size: 1.8rem;
+        font-family: serif;
+        opacity: inherit;
+        text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
+        border: none;
+        background: none;
+        pointer-events:inherit;
+        cursor: pointer;
+      }
+
+      #return-to-menu{
+        margin-top: 20px;
+        font-family: serif;
+        text-align: center; 
+        color: white;
+        font-size: 1rem;
+        font-family: serif;
+        opacity: inherit;
+        text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
+        border: none;
+        background: none;
+        pointer-events:inherit;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+
+      #game-finished-message{
+        text-align: center; 
+        color: white;
+        font-size: 2rem;
+        font-family: serif;
+        opacity: inherit;
+        text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
+      }
+
+      #game-finished-page{
+        width: 100vw;
+        height: 100vh;
+        opacity: 0;
+        background-color: rgba(0, 0, 0, 1);
+        position: absolute;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #plot-page{
+        width: 100vw;
+        height: 100vh;
+        opacity: 0;
+        background-color: rgba(0, 0, 0, 1);
+        position: absolute;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: auto;
+        transition: opacity 2s;
+      }
     </style>
   </head>
   <body>
@@ -65,8 +166,21 @@
     <div id="item-text-container">
       <p id="item-text"></p>
     </div>
+    
     <img src="assets/death.png" id="game-over-message"></img>
     <div id="vignette"></div>
+    <div id="pause-menu">
+      <button id="restart-level-button" class="pause-buttons">Restart Level</button>
+      <button class="pause-buttons" onclick="location.href = 'inferno.html'">Restart Game</button>
+      <button class="pause-buttons" onclick="location.href = 'index.html'">Return to Main Menu</button>
+    </div>
+    <div id="plot-page">
+      <p id="plot-text"></p>
+    </div>
+    <div id="game-finished-page">
+      <p id="time-text"></p>
+      <button id="return-to-menu" onclick="location.href = 'index.html'">Return to Main Menu</button>
+    </div>
     <script type="module" src="./paradisio.js"></script>
   </body>
 </html>

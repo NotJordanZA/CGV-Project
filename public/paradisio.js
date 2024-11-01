@@ -4,12 +4,14 @@ import { level1Config } from './level1.js';
 import { level2Config } from './level2.js';
 import { level3Config, applyLevel3Lighting} from './level3.js';
 import { item } from './item.js';
+import { biblicalAngel } from './angel.js';
 
 // Set up the canvas and renderer
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
 const clock = new THREE.Clock();
 var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.shadowMap.enabled = true;
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor( 0xDDDDDD, 1);
 document.body.appendChild(renderer.domElement);
@@ -106,8 +108,13 @@ var playerFalling = false;
 let fallSpeed = 0;
 let jumpSpeed = 1;
 let fallJumping = true;
+var gameCompleted = false;
 var darknessTimeout = 100;
+var fallingPlayed = false;
+var playedDeathPopup = false;
+var deathSoundPlayed = false;
 var items = [];
+var angels = [];
 var chests = [
     {x: 190, z:135},
     {x: 250, z:-100},
@@ -120,7 +127,16 @@ const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
-
+const timeText = document.getElementById('time-text');
+const pauseMenu = document.getElementById('pause-menu');
+const restartLevelButton = document.getElementById('restart-level-button');
+const gameFinishedScreen = document.getElementById('game-finished-page');
+const plotText = document.getElementById('plot-text');
+const plotScreen = document.getElementById('plot-page');
+restartLevelButton.addEventListener("click", () => {
+    resetLevel();
+    togglePauseMenu()
+});
 
 // Update the vignette intensity based on darknessTimeout
 function updateVignetteIntensity(intensity) {
@@ -147,11 +163,15 @@ function resetLevel() {
     paridisioMapTrapped.visible = false;
     fallSpeed = 0;
     fallJumping = true;
+    playerFalling = false;
     jumpSpeed = 1;
     mapScene.clear();
     pathPoints = [];
     items = [];
     playerItemCount = 0;
+    fallingPlayed = false;
+    playedDeathPopup = false;
+    deathSoundPlayed = false;
     gameOverMessage.style.opacity = 0;
     vignette.style.opacity = 0;
 
@@ -213,7 +233,6 @@ let paridisioMapTrapped;
 let paridisioChests;
 let paridisioWalls;
 let paridisioWallsBoundingBox;
-
 
 applyLevel3Lighting(scene);
 itemCount = 3;
@@ -423,6 +442,12 @@ var flashLightTarget = new THREE.Object3D();
 scene.add(flashLightTarget);
 flashLight.target = flashLightTarget;
 
+let angel1 = new biblicalAngel(scene, new THREE.Vector3(-120, 0, 125), new THREE.Vector3(180, 0, 125));
+let angel2 = new biblicalAngel(scene, new THREE.Vector3(-415, 0, -295), new THREE.Vector3(-175, 0, -295));
+let angel3 = new biblicalAngel(scene, new THREE.Vector3(305, 0, -235), new THREE.Vector3(120, 0, -234));
+angels.push(angel1);
+angels.push(angel2);
+angels.push(angel3);
 // Check if player is near chest
 function checkAtChest() {
     var x = playerParent.position.x;
@@ -525,6 +550,16 @@ function interactWithObject(){
 }
 }
 
+function togglePauseMenu(){
+    if(pauseMenu.style.opacity == 1){
+        pauseMenu.style.opacity = 0;
+        pauseMenu.style.pointerEvents = "none";
+    }else{
+        pauseMenu.style.opacity = 1;
+        pauseMenu.style.pointerEvents = "all";
+    }
+}
+
 // Movement and control variables
 var moveForward = false;
 var moveBackward = false;
@@ -547,9 +582,11 @@ function parupdateRunningSound() {
         isRunning = false;
     }
 }
+let parObjectSoundPlayed = false;
+
 function parplayObjectSoundIfNearItem() {
     const playerPosition = playerParent.position;
-    const distanceThreshold = 140; //how close the player needs to be to trigger the sound
+    const distanceThreshold = 100; // how close the player needs to be to trigger the sound
 
     let isNearItem = false;
 
@@ -563,50 +600,38 @@ function parplayObjectSoundIfNearItem() {
         }
     }
 
-    if (isNearItem && !parobjectSound.isPlaying) {
+    // Play sound if near an item and 15 seconds have passed since the last play
+    if (isNearItem && !parObjectSoundPlayed) {
         parobjectSound.play();
-    } else if (!isNearItem && parobjectSound.isPlaying) {
-        parobjectSound.stop(); // Stop the sound if the player moves away
+        parObjectSoundPlayed = true;
+
+        // Set a 15-second timer to allow the sound to play again
+        setTimeout(() => {
+            parObjectSoundPlayed = false;
+        }, 20000); //20 seconds
     }
 }
+
+
+// Initialize chest play states for each chest with a default of `false`
+
+let chestPlayStates = chests.map(() => ({ isPlayed: false }));
+
 function parplayChestSoundIfNearChest() {
     const playerPosition = playerParent.position;
     const chestDistanceThreshold = 70;
-    let isNearChest = false;
 
-    for (let i = 0; i < chests.length; i++) {
-        const chestPosition = new THREE.Vector3(chests[i].x, 0, chests[i].z);
+    chests.forEach((chest, index) => {
+        const chestPosition = new THREE.Vector3(chest.x, 0, chest.z);
         const distance = playerPosition.distanceTo(chestPosition);
 
-        if (distance <= chestDistanceThreshold) {
-            isNearChest = true;
-            break;
+        // Play the sound only if the player is within range and the sound hasn't played for this chest yet
+        if (distance <= chestDistanceThreshold && !chestPlayStates[index].isPlayed) {
+            parchestSound.play();
+            chestPlayStates[index].isPlayed = true; // Mark as played to prevent re-triggering
         }
-    }
-
-    // Play sound if near a chest, stop if moved away
-    if (isNearChest && !parchestSound.isPlaying) {
-        parchestSound.play();
-    } else if (!isNearChest && parchestSound.isPlaying) {
-        parchestSound.stop();
-    }
+    });
 }
-window.addEventListener('mousemove', function(event) {
-    const mouseX = event.clientX;
-    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
-    const deltaX = wrappedMouseX - previousMouseX;
-    previousMouseX = wrappedMouseX;
-
-    angle += deltaX * rotationSpeed;
-    
-    flashHolder.position.x = flashLightDistance * Math.cos(angle);
-    flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
-
-    flashLightTarget.position.x = playerParent.position.x +10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerParent.position.z +10*flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
-});
 
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
@@ -622,6 +647,7 @@ window.addEventListener('keydown', function(event) {
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
+        case 'Escape': togglePauseMenu(); break;
     }parupdateRunningSound();
 });
 
@@ -787,20 +813,69 @@ function updatePlayerPosition() {
     }
 }
 
+function millisToMinutesAndSeconds(millis) {
+    var minutes = Math.floor(millis / 60000);
+    var seconds = Math.floor(((millis % 60000) / 1000).toFixed(0));
+    return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+  }
+
+function displayGameFinishedScreen(){
+    const startTime = parseInt(localStorage.getItem("startTime"));
+    const endTime = Date.now();
+    const totalTime = endTime - startTime;
+    var gameOverScreenTimer = null;
+    gameOverScreenTimer = setTimeout(() => {
+        timeText.innerText = 
+            "A seemingly infinite flight of stairs grows ahead of you. While it may seem to some disquieting that the next point in your journey from heaven lies at the end of a downward descent, you know better - or so you hope.\n\n" +
+            "These steps, you are sure, lead back to your mortal life.\n" +
+            "You are compelled forward, certain that you move towards a second chance.\n\n" +
+            "Even so, for but a moment, your faith waivers. Perhaps your quest has been nothing but a prolonged retreat from your true fate.\n\n" +
+            "You cannot stop yourself from moving onwards, but could you be wrong about what awaits you at the end? Could all of this have been for naught?\n\n" +
+            "Your fate is inescapable; your journey is circular.\n" +
+            "Though, the locale of your homecoming now feels uncertain.\n\n" +
+            "Are you destined for returnal… or are you bound for Inferno?\n\n\n\n" +
+            "Well done! Your soul is absconded; you took " + millisToMinutesAndSeconds(totalTime) + " to traverse the afterlife!";
+        gameFinishedScreen.style.opacity = 1;
+        gameFinishedScreen.style.cursor = "auto";
+    }, 10000);  
+}
+
+function displayPlotScreen(){
+    var plotScreenTimer = null;
+    plotText.innerText = 
+        "You are again consumed by darkness, but this sensation is familiar now.\n\n" +
+        "In the depths before you, the body once again lies lifeless. Indeed, it is unmistakable who this is before you.\n" +
+        "“Liora, it is you. I did this, didn’t I?”\n\n" +
+        "You fall to your knees, so overcome with despair that you do not notice your Stygian surroundings fading away.\n" +
+        "You do, however, notice the absence of the overbearing calls to apathy. Gone is the river beneath you that compelled you to give up and drown.\n\n" +
+        "As the sea dries up, it is replaced by a cold, smooth marble. You feel as if your soul, mirroring your surroundings, should be light - but the weight of your sins is too immense.\n\n" +
+        "“Am I… in paradise?”";
+    plotScreen.style.opacity = 1;
+    plotScreenTimer = setTimeout(() => {
+        plotScreen.style.opacity = 0;
+    }, 25000);  
+}
+
 window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-var flickerTimeout = 0;
 var resetLevelTimeout = 10;
-var fallingPlayed = false;
-var playedDeathPopup = false;
+
+var atStart = true;
 
 function render() {
+    if (atStart) {
+        atStart = false;
+        displayPlotScreen();
+    }
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
-        goToLevel(1);
+        if(!gameCompleted){
+            displayGameFinishedScreen();
+        }
+        gameCompleted = true;
     }
     if (atChest || atItem) {
         interactMessage.style.opacity = 1;
@@ -828,19 +903,34 @@ function render() {
                 playedDeathPopup = true;
             }
         }else{
-            showGameOverScreen();
-            deathPopupSound.play();
+            if(!deathSoundPlayed){
+                deathSoundPlayed = true;
+                deathSound.play();
+            }
+            if(!playedDeathPopup){
+                var deathPopupTimer = null;
+                deathPopupTimer = setTimeout(() => {
+                    showGameOverScreen();
+                    deathPopupSound.play();
+                }, 2000);
+                playedDeathPopup = true;
+            }
         }
         flashTimeout = 0;
         bounceTimeout = 0;
         resetLevelTimeout -= 0.03;
         itemTextMessage.style.opacity = 0;
         interactMessage.style.opacity = 0;
-    }else{
+    }else if(!gameCompleted){
         updatePlayerPosition();
         updateBoundingBoxes();
         checkAtChest();
         checkAtItem();
+        angels.forEach(angel => {
+            if(angel.checkAtAngel(cube.position.x, cube.position.z)){
+                darknessTimeout -= 100;
+            }
+        })
         parplayObjectSoundIfNearItem();
         parplayChestSoundIfNearChest();
     }
@@ -860,6 +950,11 @@ function render() {
     if(skyBox){
         skyBox.position.copy(camera.position);
     }
+    
+    angels.forEach(angel => {
+        angel.moveAngel();
+        angel.rotateRings();
+    })
 
     requestAnimationFrame(render);
     mapRenderer.render(mapScene, mapCamera);

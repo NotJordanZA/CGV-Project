@@ -115,6 +115,14 @@ const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
+const pauseMenu = document.getElementById('pause-menu');
+const restartLevelButton = document.getElementById('restart-level-button');
+const plotText = document.getElementById('plot-text');
+const plotScreen = document.getElementById('plot-page');
+restartLevelButton.addEventListener("click", () => {
+    resetLevel();
+    togglePauseMenu()
+});
 
 
 // Update the vignette intensity based on darknessTimeout
@@ -124,6 +132,22 @@ function updateVignetteIntensity(intensity) {
 
 function showGameOverScreen() {
     gameOverMessage.style.opacity = 1; // Fade in the "You Died" message
+}
+
+function displayPlotScreen(){
+    var plotScreenTimer = null;
+    plotText.innerText = 
+        "Black. Your vision is consumed by an inescapable darkness - though your body is gifted no such absence.\n" +
+        "There is a pervasive heat that you feel beyond your skin, as though your innards are in a constant cycle of melting and reconstruction.\n\n" +
+        "The abyss fades; the scalding caresse of the inferno does not.\n\n" +
+        "“Where… am I?”\n\n" +
+        "You wish your confusion was confined to your location. You know nothing.\n" +
+        "Who are you? How did you get here?\n\n" +
+        "There is but one thing that you know to be certain: you cannot let the darkness grab hold of you.";
+    plotScreen.style.opacity = 1;
+    plotScreenTimer = setTimeout(() => {
+        plotScreen.style.opacity = 0;
+    }, 25000);  
 }
 
 function resetLevel() {
@@ -393,50 +417,57 @@ function checkAtChest() {
         }
     }
 }
+
+let infObjectSoundPlayed = false;
+
 function playObjectSoundIfNearItem() {
     const playerPosition = playerModel.position;
-    const distanceThreshold = 160; //how close the player needs to be to trigger the sound
-
-    let infisNearItem = false;
+    const distanceThreshold = 100; //how close the player needs to be to trigger the sound
+    let isNearItem = false;
 
     for (let i = 0; i < items.length; i++) {
         const itemPosition = items[i].position;
         const distance = playerPosition.distanceTo(itemPosition);
 
         if (distance <= distanceThreshold) {
-            infisNearItem = true;
+            isNearItem = true;
             break;
         }
     }
 
-    if (infisNearItem && !infobjectSound.isPlaying) {
+    // Play sound if near an item and 15 seconds have passed since the last play
+    if (isNearItem && !infObjectSoundPlayed) {
         infobjectSound.play();
-    } else if (!infisNearItem && infobjectSound.isPlaying) {
-        infobjectSound.stop(); // Stop the sound if the player moves away
+        infObjectSoundPlayed = true;
+
+        // Set a 15-second timer to allow the sound to play again
+        setTimeout(() => {
+            infObjectSoundPlayed = false;
+        }, 20000); //20 seconds
     }
 }
+
+
+// Initialize chest play states for each chest with a default of `false`
+
+let chestPlayStates = chests.map(() => ({ isPlayed: false }));
+
 function playChestSoundIfNearChest() {
     const playerPosition = playerModel.position;
-    const chestDistanceThreshold = 100;
-    let infisNearChest = false;
+    const chestDistanceThreshold = 70;
 
-    for (let i = 0; i < chests.length; i++) {
-        const chestPosition = new THREE.Vector3(chests[i].x, 0, chests[i].z);
+    chests.forEach((chest, index) => {
+        const chestPosition = new THREE.Vector3(chest.x, 0, chest.z);
         const distance = playerPosition.distanceTo(chestPosition);
 
-        if (distance <= chestDistanceThreshold) {
-            infisNearChest = true;
-            break;
+        // Play the sound only if the player is within range and the sound hasn't played for this chest yet
+        if (distance <= chestDistanceThreshold && !chestPlayStates[index].isPlayed) {
+            infchestSound.play();
+            chestPlayStates[index].isPlayed = true; // Mark as played to prevent re-triggering
         }
-    }
-
-    // Play sound if near a chest, stop if moved away
-    if (infisNearChest && !infchestSound.isPlaying) {
-        infchestSound.play();
-    } else if (!infisNearChest && infchestSound.isPlaying) {
-        infchestSound.stop();
-    }
+    });
 }
+
 
 // Check if player is near item
 function checkAtItem() {
@@ -491,6 +522,11 @@ function interactWithObject(){
                     if (!infscrollSound.isPlaying) {
                         infscrollSound.play();
                     }
+                } else{
+                    if (!infchainSound.isPlaying) {
+                    infchainSound.play();
+
+                }
 
                 
             // } else if (currentItem.getType() === "chain") {
@@ -503,6 +539,16 @@ function interactWithObject(){
 }
 }
 
+
+function togglePauseMenu(){
+    if(pauseMenu.style.opacity == 1){
+        pauseMenu.style.opacity = 0;
+        pauseMenu.style.pointerEvents = "none";
+    }else{
+        pauseMenu.style.opacity = 1;
+        pauseMenu.style.pointerEvents = "all";
+    }
+}
 
 // Movement and control variables
 var moveForward = false;
@@ -561,6 +607,7 @@ window.addEventListener('keydown', function(event) {
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
+        case 'Escape': togglePauseMenu(); break;
     }updateinfernoRunningSound(); //sound
 });
 
@@ -744,8 +791,13 @@ var flickerTimeout = 0;
 var resetLevelTimeout = 10;
 var playedDeathPopup = false;
 var deathSoundPlayed = false;
+var atStart = true;
 
 function render() {
+    if (atStart) {
+        atStart = false;
+        displayPlotScreen();
+    }
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
@@ -841,4 +893,6 @@ function render() {
 
 // Initial level setup
 backgroundMusic.play();
+localStorage.setItem("startTime", Date.now());
 setupLevel(currentLevel);
+render();
