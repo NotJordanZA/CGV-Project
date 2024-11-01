@@ -212,7 +212,7 @@ scene.background = new THREE.Color( 0x000000 );
 gltfLoader.load('./assets/inferno/cgv-inferno-map-baked-mesh.glb', (gltf) => {
     // Add the loaded infernoMap to the scene
     infernoMap = gltf.scene;
-    
+    infernoMap.rotation.y =  -Math.PI / 2;
     // Position the infernoMap to the right of the plane
     infernoMap.scale.set(50,50,50);
     infernoMap.position.set(0, -10, 0); // Adjust the position as needed
