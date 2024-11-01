@@ -86,6 +86,7 @@ const itemTextMessage = document.getElementById('item-text');
 const timeText = document.getElementById('time-text');
 const pauseMenu = document.getElementById('pause-menu');
 const restartLevelButton = document.getElementById('restart-level-button');
+const gameFinishedScreen = document.getElementById('game-finished-page');
 restartLevelButton.addEventListener("click", () => {
     resetLevel();
     togglePauseMenu()
@@ -600,12 +601,15 @@ function millisToMinutesAndSeconds(millis) {
     return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
   }
 
-function displayCompletionTime(){
+function displayGameFinishedScreen(){
     const startTime = parseInt(localStorage.getItem("startTime"));
     const endTime = Date.now();
-    const totalTime = endTime - startTime;  
-    timeText.innerText = millisToMinutesAndSeconds(totalTime);
-    timeText.style.opacity = 1;
+    const totalTime = endTime - startTime;
+    var gameOverScreenTimer = null;
+    gameOverScreenTimer = setTimeout(() => {
+        timeText.innerText = "Well done! Your soul is absconded; you took " + millisToMinutesAndSeconds(totalTime) + " to traverse the afterlife!";
+        gameFinishedScreen.style.opacity = 1;
+    }, 10000);  
 }
 
 window.addEventListener('resize', function() {
@@ -622,7 +626,7 @@ function render() {
         atChest = false;
         atItem = false;
         if(!gameCompleted){
-            displayCompletionTime();
+            displayGameFinishedScreen();
         }
         gameCompleted = true;
     }
