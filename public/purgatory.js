@@ -417,8 +417,17 @@ gltfLoader.load('./assets/purgatory/Ghost.glb', (gltf) => {
 
 const listener = new THREE.AudioListener();
 camera.add( listener );
-const deathPopupSound = new THREE.Audio( listener );
 const audioLoader = new THREE.AudioLoader();
+
+const backgroundMusic = new THREE.Audio( listener );
+audioLoader.load( './assets/music/purgatory.mp3', function( buffer ) {
+	backgroundMusic.setBuffer( buffer );
+	backgroundMusic.setVolume( 0.5 );
+    backgroundMusic.setLoop(true);
+    backgroundMusic.play();
+});
+
+const deathPopupSound = new THREE.Audio( listener );
 audioLoader.load( './assets/soundeffects/you-died-sting.mp3', function( buffer ) {
 	deathPopupSound.setBuffer( buffer );
 	deathPopupSound.setVolume( 0.5 );

@@ -282,8 +282,9 @@ const backgroundMusic = new THREE.Audio( listener );
 
 audioLoader.load( './assets/music/inferno.mp3', function( buffer ) {
 	backgroundMusic.setBuffer( buffer );
-	backgroundMusic.setVolume( 1 );
+	backgroundMusic.setVolume( 0.5 );
     backgroundMusic.setLoop(true);
+    backgroundMusic.play();
 });
 
 const deathPopupSound = new THREE.Audio( listener );
@@ -892,7 +893,6 @@ function render() {
 }
 
 // Initial level setup
-backgroundMusic.play();
 localStorage.setItem("startTime", Date.now());
 setupLevel(currentLevel);
 render();
