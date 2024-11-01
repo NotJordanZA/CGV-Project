@@ -8,7 +8,7 @@ import { item } from './item.js';
 // Set up the canvas and renderer
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
-
+const clock = new THREE.Clock();
 var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor(0xDDDDDD, 1);
@@ -20,6 +20,69 @@ let chestIndex = -1;
 var aspect = WIDTH / HEIGHT;
 var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+
+//Load and add model
+const gltfLoader = new GLTFLoader();
+var playerParent = new THREE.Object3D();
+var flashHolder = new THREE.Object3D();
+
+gltfLoader.load('./assets/model/cgv-torch.glb', (gltf) => {
+    flashHolder.add(gltf.scene);
+    flashHolder.scale.set(0.5, 0.5, 0.5);
+    playerParent.add(flashHolder); // Attach it to the player
+}, undefined, (error) => {
+    console.error('An error happened while loading the flashLight model:', error);
+});
+
+
+scene.add(playerParent);
+var playerModel;
+let mixer;
+let walkAction;
+gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
+    playerModel = gltf.scene;
+    playerModel.scale.set(1, 1, 1); // Adjust scale as needed
+    playerParent.position.set(0, -10, 0);
+    playerModel.rotateY(Math.PI);
+    playerParent.add(playerModel);
+
+    mixer = new THREE.AnimationMixer(playerModel);
+    const combinedTracks = gltf.animations.reduce((tracks, clip) => {
+        return tracks.concat(clip.tracks);
+    }, []);
+    const walkClip = new THREE.AnimationClip('Walk', -1, combinedTracks);
+    walkAction = mixer.clipAction(walkClip);
+    walkAction.loop = THREE.LoopRepeat;
+
+    render();
+}, undefined, (error) => {
+    console.error('An error happened while loading the player model:', error);
+});
+
+window.addEventListener('mousemove', function(event) {
+    const mouseX = event.clientX;
+    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
+    const deltaX = wrappedMouseX - previousMouseX;
+    previousMouseX = wrappedMouseX;
+
+    angle += deltaX * rotationSpeed;
+    
+    // Set flashlight position and target based on angle
+    flashHolder.position.x = flashLightDistance * Math.cos(angle);
+    flashHolder.position.z = flashLightDistance * Math.sin(angle);
+    flashHolder.position.y = 2; 
+
+    flashLightTarget.position.x = playerModel.position.x + 10 * flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerModel.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.y = 2;
+
+    // Adjust player orientation to match flashlight direction, with a 45-degree correction
+    if (playerModel) {
+        playerModel.rotation.y = angle + Math.PI / 3; // Adjust by 45 degrees
+    }
+});
+
+
 
 // Position the camera for an isometric view (45 degrees)
 camera.position.set(40, 40, 40); // Adjust these for the desired view
@@ -60,7 +123,7 @@ pathLine.computeLineDistances();
 // Level Configurations
 let currentLevel = 1; // Start at level 0
 const levels = [level1Config, level2Config, level3Config];
-let initialCubePosition = new THREE.Vector3(0, 0, 0);
+let initialPlayerModelPosition = new THREE.Vector3(0, 0, 0);
 let initialCameraPosition = new THREE.Vector3(40, 40, 40);
 var atChest = false;
 var atGhost = false;
@@ -190,8 +253,8 @@ function displayChestMessage() {
 
 
 function resetLevel() {
+    playerModel.position.copy(initialPlayerModelPosition);
     document.getElementById('game-over-message2').style.opacity = '0';
-    cube.position.copy(initialCubePosition);
     camera.position.copy(initialCameraPosition);
 
     items.forEach(item=>{ // Remove items from map
@@ -221,8 +284,7 @@ function resetLevel() {
 function setupLevel(level) {
     const levelConfig = levels[level];
     mapScene.add(pathLine);
-    // Update the cube color for this level
-    cube.material.color.setHex(levelConfig.cubeColor);
+    // Update the cube color for this levelw
 
     // Update flashlight color and power for this level
     flashLight.color.setHex(levelConfig.flashLightColor);
@@ -279,7 +341,6 @@ const purgatoryGhostsBoundingBox = new THREE.Box3();
 var floorBoundingBox = new THREE.Box3();
 itemCount = 3;
 scene.background = new THREE.Color( 0x000000 );
-const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/purgatory/cgv-purgatory-map-baked-mesh.glb', (gltf) => {
     // Add the loaded purgatoryMap to the scene
     purgatoryMap = gltf.scene;
@@ -445,17 +506,9 @@ for(i = 0; i < chests.length; i++){
     scene.add(ghostLight);
 }
 
-// Cube setup
-var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
-var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
-var cube = new THREE.Mesh(boxGeometry, phongMaterial);
-cube.rotation.set(0.0, 0.0, 0);
-cube.translateX(0);
-scene.add(cube);
+
 
 // Flashlight setupas
-var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
-var flashHolder = new THREE.Mesh(flashGeometry, phongMaterial);
 
 // var flashTimeout = 1000;
 // var bounceTimeout = 100;
@@ -471,12 +524,10 @@ var flashLightTarget = new THREE.Object3D();
 scene.add(flashLightTarget);
 flashLight.target = flashLightTarget;
 
-cube.add(flashHolder); // Attach it to the cube
-
 // Check if player is near chest
 function checkAtChest() {
-    var x = cube.position.x;
-    var z = cube.position.z;
+    var x = playerModel.position.x;
+    var z = playerModel.position.z;
 
     atChest = false;
 
@@ -534,8 +585,8 @@ function checkAtGhost() {
 
 // Check if player is near item
 function checkAtItem() {
-    var x = cube.position.x;
-    var z = cube.position.z;
+    var x = playerModel.position.x;
+    var z = playerModel.position.z;
 
     atItem = false;
 
@@ -623,7 +674,7 @@ var moveSpeed = 4;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2; // Start in the middle
-let angle = -45;
+let angle = 0;
 const rotationSpeed = 0.006; // Speed of arc rotation
 let isRunning=false//sound
 
@@ -692,23 +743,23 @@ function purgatoryplayChestSoundIfNearChest() {
 }
 window.addEventListener('mousemove', function(event) {
     if(hearts > 0){
-         // Calculate the horizontal mouse movement
         const mouseX = event.clientX;
         const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
         const deltaX = wrappedMouseX - previousMouseX;
         previousMouseX = wrappedMouseX;
 
-        // Adjust the angle based on mouse movement
         angle += deltaX * rotationSpeed;
 
-        // Update the flashHolder position based on the new angle
         flashHolder.position.x = flashLightDistance * Math.cos(angle);
         flashHolder.position.z = flashLightDistance * Math.sin(angle);
-        flashHolder.position.y = 2; 
+        flashHolder.position.y = 10;
 
-        flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
-        flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
-        flashLightTarget.position.y = 2;
+        flashLightTarget.position.x = playerParent.position.x + 10 * flashLightDistance * Math.cos(angle);
+        flashLightTarget.position.z = playerParent.position.z + 10 * flashLightDistance * Math.sin(angle);
+        flashLightTarget.position.y = 10;
+
+        flashHolder.lookAt(flashLightTarget.position);
+        flashHolder.rotateY(-Math.PI/2);
     }
 });
 
@@ -740,7 +791,7 @@ window.addEventListener('keyup', function(event) {
     }purgatoryupdateRunSound();
 });
 
-var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
+var playerModelBoundingBox = new THREE.Box3();
 var chestsBoundingBoxes = [];
 var wallsBoundingBoxes = [];
 var ghostBoundingBoxes = [];
@@ -748,7 +799,7 @@ var ghostBoundingBoxes = [];
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
     // Update player's bounding box
-    cubeBoundingBox.setFromObject(cube);
+    playerModelBoundingBox.setFromObject(playerModel);
 
     if (purgatoryChests && chestsBoundingBoxes.length < 1000) {
         purgatoryChests.traverse((child) => {
@@ -799,10 +850,10 @@ function checkGhostCollisions() {
 // Check for collision with the chests
 function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
-        if (cubeBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
-            var x = cube.position.x;
-            var y = cube.position.y;
-            var z = cube.position.z;
+        if (playerModelBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
+            var x = playerModel.position.x;
+            var y = playerModel.position.y;
+            var z = playerModel.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -815,10 +866,10 @@ function checkChestCollisions() {
 // Check for collision with the invisible walls
 function checkInvisibleWallsCollisions() {
     for(let i = 0; i< wallsBoundingBoxes.length; i++){
-        if (cubeBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
-            var x = cube.position.x;
-            var y = cube.position.y;
-            var z = cube.position.z;
+        if (playerModelBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
+            var x = playerModel.position.x;
+            var y = playerModel.position.y;
+            var z = playerModel.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -830,32 +881,37 @@ function checkInvisibleWallsCollisions() {
 
 function handleCollisions(direction) {
     // Store the current position
-    const oldCubePosition = cube.position.clone();
+    const oldPlayerModelPosition = playerParent.position.clone();
     const oldCameraPosition = camera.position.clone();
-
+    let playerAngle = 0;
     // Try moving the player in the specified direction
     if (direction === 'forward') {
-        cube.position.z -= moveSpeed;
+        playerParent.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
     } else if (direction === 'backward') {
-        cube.position.z += moveSpeed;
+        playerParent.position.z += moveSpeed;
         camera.position.z += moveSpeed;
+        playerAngle = Math.PI;
     } else if (direction === 'left') {
-        cube.position.x -= moveSpeed;
+        playerParent.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
+        playerAngle = -Math.PI/2;
     } else if (direction === 'right') {
-        cube.position.x += moveSpeed;
+        playerParent.position.x += moveSpeed;
         camera.position.x += moveSpeed;
+        playerAngle = Math.PI/2;
     }
 
+    playerModel.rotation.y = playerAngle;
+
     // Update the bounding box after the attempted movement
-    cubeBoundingBox.setFromObject(cube);
+    playerModelBoundingBox.setFromObject(playerModel);
 
     // Check if the player has collided with the wall or a chest
     if (checkChestCollisions() || checkInvisibleWallsCollisions() || checkGhostCollisions()) {
         // If collided, revert to the previous position
         // console.log("I ams stuck");
-        cube.position.copy(oldCubePosition);
+        playerModel.position.copy(oldPlayerModelPosition);
         camera.position.copy(oldCameraPosition);
     }else{
         updatePathTrail();
@@ -864,12 +920,24 @@ function handleCollisions(direction) {
 
 // Update minimap
 function updatePathTrail() {
-    pathPoints.push(new THREE.Vector3(cube.position.x/15, 0, cube.position.z/15));
+    pathPoints.push(new THREE.Vector3(playerModel.position.x/15, 0, playerModel.position.z/15));
     pathGeometry.setFromPoints(pathPoints);
     pathLine.computeLineDistances();
 }
 
 function updatePlayerPosition() {
+    const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+    // Start the walk animation if moving and not already playing
+    if (isMoving && !walkAction.isRunning()) {
+        walkAction.play();
+    }
+    // Stop the walk animation if not moving
+    else if (!isMoving && walkAction.isRunning()) {
+        walkAction.stop();
+    }
+
+
+
     if (moveForward) {
         handleCollisions('forward');
     }
@@ -908,6 +976,10 @@ function render() {
         interactMessage.style.opacity = 1;
     } else {
         interactMessage.style.opacity = 0;
+    }
+    if (mixer) {
+        const delta = clock.getDelta(); // Use a THREE.Clock instance to get the delta time
+        mixer.update(delta); // Update the animation mixer
     }
 
     // if (flashTimeout > 100) {
@@ -978,6 +1050,5 @@ function render() {
     renderer.render(scene, camera);
 }
 
-// Initial level setup
 setupLevel(currentLevel);
 render();  

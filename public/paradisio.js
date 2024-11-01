@@ -9,7 +9,7 @@ import { biblicalAngel } from './angel.js';
 // Set up the canvas and renderer
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
-
+const clock = new THREE.Clock();
 var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.shadowMap.enabled = true;
 renderer.setSize(WIDTH, HEIGHT);
@@ -20,6 +20,44 @@ var aspect = WIDTH / HEIGHT;
 var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 100000);
 var skyBox;
+
+//Load and add model
+const gltfLoader = new GLTFLoader();
+var playerParent = new THREE.Object3D();
+var flashHolder = new THREE.Object3D();
+
+gltfLoader.load('./assets/model/cgv-torch.glb', (gltf) => {
+    flashHolder.add(gltf.scene);
+    flashHolder.scale.set(0.5, 0.5, 0.5);
+    playerParent.add(flashHolder); // Attach it to the player
+}, undefined, (error) => {
+    console.error('An error happened while loading the flashLight model:', error);
+});
+
+
+scene.add(playerParent);
+var playerModel;
+let mixer;
+let walkAction;
+gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
+    playerModel = gltf.scene;
+    playerModel.scale.set(1, 1, 1); // Adjust scale as needed
+    playerParent.position.set(0, -10, 0);
+    playerModel.rotateY(Math.PI);
+    playerParent.add(playerModel);
+
+    mixer = new THREE.AnimationMixer(playerModel);
+    const combinedTracks = gltf.animations.reduce((tracks, clip) => {
+        return tracks.concat(clip.tracks);
+    }, []);
+    const walkClip = new THREE.AnimationClip('Walk', -1, combinedTracks);
+    walkAction = mixer.clipAction(walkClip);
+    walkAction.loop = THREE.LoopRepeat;
+
+    render();
+}, undefined, (error) => {
+    console.error('An error happened while loading the player model:', error);
+});
 
 // Position the camera for an isometric view (45 degrees)
 camera.position.set(40, 40, 40); // Adjust these for the desired view
@@ -60,7 +98,7 @@ pathLine.computeLineDistances();
 // Level Configurations
 let currentLevel = 2; // Start at level 0
 const levels = [level1Config, level2Config, level3Config];
-let initialCubePosition = new THREE.Vector3(0, 0, 0);
+let initialPlayerModelPosition = new THREE.Vector3(0, 0, 0);
 let initialCameraPosition = new THREE.Vector3(40, 40, 40);
 var atChest = false;
 var atItem = false;
@@ -110,7 +148,7 @@ function showGameOverScreen() {
 }
 
 function resetLevel() {
-    cube.position.copy(initialCubePosition);
+    playerParent.position.copy(initialPlayerModelPosition);
     camera.position.copy(initialCameraPosition);
     camera.lookAt(0, 0, 0); 
 
@@ -145,7 +183,6 @@ function resetLevel() {
 function setupLevel(level) {
     const levelConfig = levels[level];
     mapScene.add(pathLine);
-    cube.material.color.setHex(levelConfig.cubeColor);
 
     // Update flashlight color and power for this level
     flashLight.color.setHex(levelConfig.flashLightColor);
@@ -199,7 +236,6 @@ let paridisioWallsBoundingBox;
 
 applyLevel3Lighting(scene);
 itemCount = 3;
-const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/level3/cgv-paradisio-map-base-shiny.glb', (gltf) => {
     paridisioMap = gltf.scene;
     paridisioMap.rotation.y = -Math.PI / 2;
@@ -331,7 +367,7 @@ audioLoader.load('./assets/soundeffects/paradiso-walls.mp3', (buffer) => {
 window.addEventListener('click', () => {
     if (parrunningSound.context.state === 'suspended') {
         parrunningSound.context.resume().then(() => {
-            console.log('Audio context resumed');
+            
         });
     }
 });
@@ -394,23 +430,9 @@ materials.forEach(material => {
 skyBox = new THREE.Mesh(skyBoxGeometry, materials);
 scene.add(skyBox);
 
-
-// Cube setup
-var boxGeometry = new THREE.BoxGeometry(8, 8, 8);
-var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
-var cube = new THREE.Mesh(boxGeometry, phongMaterial);
-cube.translateY(-5);
-scene.add(cube);
-
 // Flashlight setupas
-var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
-var flashHolder = new THREE.Mesh(flashGeometry, phongMaterial);
-
-var flashTimeout = 5000;
-var bounceTimeout = 0;
-
 var flashLight = new THREE.SpotLight(0xffe394, 5000, 0, Math.PI / 4, 1, 2);
-flashLight.position.set(0, 0, 0); // Position it at the cube's location
+flashLight.position.set(0, 0, 0); 
 var flashLightBounce = new THREE.PointLight(0xffe394, 100);
 flashLightBounce.position.set(0, 0, 0);
 flashLight.add(flashLightBounce);
@@ -420,29 +442,16 @@ var flashLightTarget = new THREE.Object3D();
 scene.add(flashLightTarget);
 flashLight.target = flashLightTarget;
 
-cube.add(flashHolder); // Attach it to the cube
-
-// Angel setup
 let angel1 = new biblicalAngel(scene, new THREE.Vector3(-120, 0, 125), new THREE.Vector3(180, 0, 125));
 let angel2 = new biblicalAngel(scene, new THREE.Vector3(-415, 0, -295), new THREE.Vector3(-175, 0, -295));
 let angel3 = new biblicalAngel(scene, new THREE.Vector3(305, 0, -235), new THREE.Vector3(120, 0, -234));
 angels.push(angel1);
 angels.push(angel2);
 angels.push(angel3);
-
-// {x: -113.75, y: 0, z: 122.5}
-// {x: 183.75, y: 0, z: 126.25}
-
-// {x: -415, y: 0, z: -295}
-// {x: -175, y: 0, z: -295}
-
-// {x: 307.5, y: 0, z: -233.75}
-// {x: 120, y: 0, z: -233.75}
-
 // Check if player is near chest
 function checkAtChest() {
-    var x = cube.position.x;
-    var z = cube.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atChest = false;
 
@@ -458,8 +467,8 @@ function checkAtChest() {
 
 // Check if player is near item
 function checkAtItem() {
-    var x = cube.position.x;
-    var z = cube.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atItem = false;
 
@@ -492,7 +501,7 @@ function displayItemMessage(item) {
 
 function fallingPlayer() {
     if (fallJumping) {
-        cube.translateY(jumpSpeed);
+        playerModel.translateY(jumpSpeed);
         jumpSpeed -= 0.05;
         
         if (jumpSpeed <= 0) {
@@ -501,7 +510,7 @@ function fallingPlayer() {
         }
     } else {
         fallSpeed -= 0.05;
-        cube.translateY(fallSpeed);
+        playerModel.translateY(fallSpeed);
     }
 }
 
@@ -519,25 +528,21 @@ function interactWithObject(){
         const modelPath = currentItem.modelPath.toLowerCase();
 
         if (modelPath.includes("key")) {
-            console.log("Playing key sound for item with key in modelPath");
             if (!parkeySound.isPlaying) {
                 parkeySound.play();
             }
         } else if (modelPath.includes("heart")) {
-            console.log("Playing heart sound for item with heart in modelPath");
             if (!parheartSound.isPlaying) {
                 parheartSound.play();
             }
     
 }else if (modelPath.includes("drop")) {
-    console.log("Playing drop sound for item withdrop in modelPath");
     if (!pardropSound.isPlaying) {
         pardropSound.play();
     }
 
 } 
      else {
-        console.log("Playing default object sound");
         if (!parobjectSound.isPlaying) {
             parobjectSound.play();
         }
@@ -564,26 +569,23 @@ var moveSpeed = 1.25;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2;
-let angle = -45;
+let angle = 0;
 const rotationSpeed = 0.006;
-let isRunning=false//sound
+let isRunning=false;//sound
 
 function parupdateRunningSound() {
-    console.log(`Update Sound - Forward: ${moveForward}, Backward: ${moveBackward}, Left: ${moveLeft}, Right: ${moveRight}`);
     if ((moveForward || moveBackward || moveLeft || moveRight) && !parrunningSound.isPlaying) {
         parrunningSound.play(); // Start sound
-        console.log("Running sound started");
         isRunning = true;
     } else if (!moveForward && !moveBackward && !moveLeft && !moveRight && parrunningSound.isPlaying) {
         parrunningSound.stop(); // Stop sound
-        console.log("Running sound stopped");
         isRunning = false;
     }
 }
 let parObjectSoundPlayed = false;
 
 function parplayObjectSoundIfNearItem() {
-    const playerPosition = cube.position;
+    const playerPosition = playerParent.position;
     const distanceThreshold = 100; // how close the player needs to be to trigger the sound
 
     let isNearItem = false;
@@ -616,7 +618,7 @@ function parplayObjectSoundIfNearItem() {
 let chestPlayStates = chests.map(() => ({ isPlayed: false }));
 
 function parplayChestSoundIfNearChest() {
-    const playerPosition = cube.position;
+    const playerPosition = playerParent.position;
     const chestDistanceThreshold = 70;
 
     chests.forEach((chest, index) => {
@@ -631,28 +633,6 @@ function parplayChestSoundIfNearChest() {
     });
 }
 
-
-    
-
-window.addEventListener('mousemove', function(event) {
-    if(!gameCompleted){
-        const mouseX = event.clientX;
-        const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
-        const deltaX = wrappedMouseX - previousMouseX;
-        previousMouseX = wrappedMouseX;
-
-        angle += deltaX * rotationSpeed;
-        
-        flashHolder.position.x = flashLightDistance * Math.cos(angle);
-        flashHolder.position.z = flashLightDistance * Math.sin(angle);
-        flashHolder.position.y = 2; 
-
-        flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
-        flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
-        flashLightTarget.position.y = 2;
-    }
-});
-
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1': goToLevel(0); break; // Move to Level 1
@@ -663,7 +643,7 @@ window.addEventListener('keydown', function(event) {
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
-        case 'p': console.log(cube.position); break;
+        case 'p': console.log(playerParent.position); break;
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
@@ -680,14 +660,14 @@ window.addEventListener('keyup', function(event) {
     }parupdateRunningSound();
 });
 
-var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
+var playerModelBoundingBox = new THREE.Box3();
 var chestsBoundingBoxes = [];
 var wallsBoundingBoxes = [];
 
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
     // Update player's bounding box
-    cubeBoundingBox.setFromObject(cube);
+    playerModelBoundingBox.setFromObject(playerModel);
 
     if (paridisioChests && chestsBoundingBoxes.length < 1000) {
         paridisioChests.traverse((child) => {
@@ -710,10 +690,10 @@ function updateBoundingBoxes() {
 // Check for collision with the chests
 function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
-        if (cubeBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
-            var x = cube.position.x;
-            var y = cube.position.y;
-            var z = cube.position.z;
+        if (playerModelBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -726,10 +706,10 @@ function checkChestCollisions() {
 // Check for collision with the invisible walls
 function checkInvisibleWallsCollisions() {
     for(let i = 0; i< wallsBoundingBoxes.length; i++){
-        if (cubeBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
-            var x = cube.position.x;
-            var y = cube.position.y;
-            var z = cube.position.z;
+        if (playerModelBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=10 && x>=-10 && z<=10 && z>=-10){
                 return false;
             }
@@ -738,33 +718,57 @@ function checkInvisibleWallsCollisions() {
     }
     return false; // No collision
 }
+window.addEventListener('mousemove', function(event) {
+    const mouseX = event.clientX;
+    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
+    const deltaX = wrappedMouseX - previousMouseX;
+    previousMouseX = wrappedMouseX;
+
+    angle += deltaX * rotationSpeed;
+    
+    flashHolder.position.x = flashLightDistance * Math.cos(angle);
+    flashHolder.position.z = flashLightDistance * Math.sin(angle);
+    flashHolder.position.y = 10;
+
+    flashLightTarget.position.x = playerParent.position.x + 10 * flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerParent.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.y = 10;
+
+    flashHolder.lookAt(flashLightTarget.position);
+    flashHolder.rotateY(-Math.PI/2);
+});
+
 
 function handleCollisions(direction) {
     // Store the current position
-    const oldCubePosition = cube.position.clone();
+    const oldPlayerModelPosition = playerParent.position.clone();
     const oldCameraPosition = camera.position.clone();
-
+    let playerAngle = 0;
     // Try moving the player in the specified direction
     if (direction === 'forward') {
-        cube.position.z -= moveSpeed;
+        playerParent.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
     } else if (direction === 'backward') {
-        cube.position.z += moveSpeed;
+        playerParent.position.z += moveSpeed;
         camera.position.z += moveSpeed;
+        playerAngle = Math.PI;
     } else if (direction === 'left') {
-        cube.position.x -= moveSpeed;
+        playerParent.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
+        playerAngle = -Math.PI/2;
     } else if (direction === 'right') {
-        cube.position.x += moveSpeed;
+        playerParent.position.x += moveSpeed;
         camera.position.x += moveSpeed;
+        playerAngle = Math.PI/2;
     }
 
+    playerModel.rotation.y = playerAngle;
     // Update the bounding box after the attempted movement
-    cubeBoundingBox.setFromObject(cube);
+    playerModelBoundingBox.setFromObject(playerModel);
 
     // Check if the player has collided with the wall or a chest, revert position if true
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
-        cube.position.copy(oldCubePosition);
+        playerParent.position.copy(oldPlayerModelPosition);
         camera.position.copy(oldCameraPosition);
         //Play sound when collide with walls
         if (!paradisoWallSound.isPlaying) {
@@ -778,12 +782,23 @@ function handleCollisions(direction) {
 
 // Update minimap
 function updatePathTrail() {
-    pathPoints.push(new THREE.Vector3(cube.position.x/15, 0, cube.position.z/15));
+    pathPoints.push(new THREE.Vector3(playerParent.position.x/15, 0, playerParent.position.z/15));
     pathGeometry.setFromPoints(pathPoints);
     pathLine.computeLineDistances();
 }
 
 function updatePlayerPosition() {
+    const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+    // Start the walk animation if moving and not already playing
+    if (isMoving && !walkAction.isRunning()) {
+        walkAction.play();
+    }
+    // Stop the walk animation if not moving
+    else if (!isMoving && walkAction.isRunning()) {
+        walkAction.stop();
+    }
+
+
     if (moveForward) {
         handleCollisions('forward');
     }
@@ -867,7 +882,10 @@ function render() {
     } else {
         interactMessage.style.opacity = 0;
     }
-
+    if (mixer) {
+        const delta = clock.getDelta(); // Use a THREE.Clock instance to get the delta time
+        mixer.update(delta); // Update the animation mixer
+    }
     if (darknessTimeout <= 0) {
         
         if(playerFalling){
@@ -945,4 +963,3 @@ function render() {
 
 // Initial level setup
 setupLevel(currentLevel);
-render();
