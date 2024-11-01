@@ -33,21 +33,24 @@
           z-index: 10;
         }
 
-        /* #level-link{
+        #attributions-link{
             color: white;
             z-index: 9999;
-            border-radius: 10px;
-            background-color: rgb(62, 62, 62);
-            width: 100px;
-            height: 50px;
-            border: none;
-        } */
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+        }
 
         #play-button{
           position: relative;
           top: 0%;
           z-index: 10000;
           transform: scale(0.1);
+          transition: transform 0.15s ease-in-out;
+        }
+
+        #play-button:hover{
+          transform: scale(0.1025);
         }
 
         #title-logo{
@@ -64,6 +67,7 @@
         <img src="./assets/menu/wallpaperflare.com_wallpaper.jpg" id="background-image"/>
         <img src="./assets/menu/DantesReturnalGold.png" alt="title-logo" id="title-logo"/>
         <img src="./assets/menu/playButton.png" alt="play-button" id="play-button" onclick="location.href = 'inferno.html'" style="cursor: pointer;"/>
+        <a id="attributions-link" href="https://docs.google.com/document/d/1q6ivMx1a-06ysL2ichFOGb8jT7G_m4qdXtgq8QmDKh4/edit?usp=sharing">Attributions and Sources</a>
     </div>
   </body>
 </html>

@@ -115,6 +115,7 @@ function resetLevel() {
     paridisioMapTrapped.visible = false;
     fallSpeed = 0;
     fallJumping = true;
+    playerFalling = false;
     jumpSpeed = 1;
     mapScene.clear();
     pathPoints = [];
