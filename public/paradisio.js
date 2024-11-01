@@ -20,18 +20,29 @@ var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 100
 var skyBox;
 
 //Load and add model
+const gltfLoader = new GLTFLoader();
+var playerParent = new THREE.Object3D();
+var flashHolder = new THREE.Object3D();
+
+gltfLoader.load('./assets/model/cgv-torch.glb', (gltf) => {
+    flashHolder.add(gltf.scene);
+    flashHolder.scale.set(0.5, 0.5, 0.5);
+    playerParent.add(flashHolder); // Attach it to the player
+}, undefined, (error) => {
+    console.error('An error happened while loading the flashLight model:', error);
+});
+
+
+scene.add(playerParent);
 var playerModel;
 let mixer;
 let walkAction;
-var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
-const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
     playerModel = gltf.scene;
     playerModel.scale.set(1, 1, 1); // Adjust scale as needed
-    playerModel.position.set(0, 0, 0);
+    playerParent.position.set(0, -10, 0);
     playerModel.rotateY(Math.PI);
-    scene.add(playerModel);
-    playerModel.add(flashHolder); // Attach it to the cube
+    playerParent.add(playerModel);
 
     mixer = new THREE.AnimationMixer(playerModel);
     const combinedTracks = gltf.animations.reduce((tracks, clip) => {
@@ -45,8 +56,6 @@ gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
 }, undefined, (error) => {
     console.error('An error happened while loading the player model:', error);
 });
-
-
 
 // Position the camera for an isometric view (45 degrees)
 camera.position.set(40, 40, 40); // Adjust these for the desired view
@@ -123,7 +132,7 @@ function showGameOverScreen() {
 }
 
 function resetLevel() {
-    playerModel.position.copy(initialPlayerModelPosition);
+    playerParent.position.copy(initialPlayerModelPosition);
     camera.position.copy(initialCameraPosition);
     camera.lookAt(0, 0, 0); 
 
@@ -339,7 +348,7 @@ audioLoader.load('./assets/soundeffects/paradiso-walls.mp3', (buffer) => {
 window.addEventListener('click', () => {
     if (parrunningSound.context.state === 'suspended') {
         parrunningSound.context.resume().then(() => {
-            console.log('Audio context resumed');
+            
         });
     }
 });
@@ -403,14 +412,8 @@ skyBox = new THREE.Mesh(skyBoxGeometry, materials);
 scene.add(skyBox);
 
 // Flashlight setupas
-var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
-var flashHolder = new THREE.Mesh(flashGeometry, phongMaterial);
-
-var flashTimeout = 5000;
-var bounceTimeout = 0;
-
 var flashLight = new THREE.SpotLight(0xffe394, 5000, 0, Math.PI / 4, 1, 2);
-flashLight.position.set(0, 0, 0); // Position it at the cube's location
+flashLight.position.set(0, 0, 0); 
 var flashLightBounce = new THREE.PointLight(0xffe394, 100);
 flashLightBounce.position.set(0, 0, 0);
 flashLight.add(flashLightBounce);
@@ -422,8 +425,8 @@ flashLight.target = flashLightTarget;
 
 // Check if player is near chest
 function checkAtChest() {
-    var x = playerModel.position.x;
-    var z = playerModel.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atChest = false;
 
@@ -439,8 +442,8 @@ function checkAtChest() {
 
 // Check if player is near item
 function checkAtItem() {
-    var x = playerModel.position.x;
-    var z = playerModel.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atItem = false;
 
@@ -500,25 +503,21 @@ function interactWithObject(){
         const modelPath = currentItem.modelPath.toLowerCase();
 
         if (modelPath.includes("key")) {
-            console.log("Playing key sound for item with key in modelPath");
             if (!parkeySound.isPlaying) {
                 parkeySound.play();
             }
         } else if (modelPath.includes("heart")) {
-            console.log("Playing heart sound for item with heart in modelPath");
             if (!parheartSound.isPlaying) {
                 parheartSound.play();
             }
     
 }else if (modelPath.includes("drop")) {
-    console.log("Playing drop sound for item withdrop in modelPath");
     if (!pardropSound.isPlaying) {
         pardropSound.play();
     }
 
 } 
      else {
-        console.log("Playing default object sound");
         if (!parobjectSound.isPlaying) {
             parobjectSound.play();
         }
@@ -537,22 +536,19 @@ var flashLightDistance = 10;
 let previousMouseX = window.innerWidth / 2;
 let angle = 0;
 const rotationSpeed = 0.006;
-let isRunning=false//sound
+let isRunning=false;//sound
 
 function parupdateRunningSound() {
-    console.log(`Update Sound - Forward: ${moveForward}, Backward: ${moveBackward}, Left: ${moveLeft}, Right: ${moveRight}`);
     if ((moveForward || moveBackward || moveLeft || moveRight) && !parrunningSound.isPlaying) {
         parrunningSound.play(); // Start sound
-        console.log("Running sound started");
         isRunning = true;
     } else if (!moveForward && !moveBackward && !moveLeft && !moveRight && parrunningSound.isPlaying) {
         parrunningSound.stop(); // Stop sound
-        console.log("Running sound stopped");
         isRunning = false;
     }
 }
 function parplayObjectSoundIfNearItem() {
-    const playerPosition = playerModel.position;
+    const playerPosition = playerParent.position;
     const distanceThreshold = 140; //how close the player needs to be to trigger the sound
 
     let isNearItem = false;
@@ -574,7 +570,7 @@ function parplayObjectSoundIfNearItem() {
     }
 }
 function parplayChestSoundIfNearChest() {
-    const playerPosition = playerModel.position;
+    const playerPosition = playerParent.position;
     const chestDistanceThreshold = 70;
     let isNearChest = false;
 
@@ -607,8 +603,8 @@ window.addEventListener('mousemove', function(event) {
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
     flashHolder.position.y = 2; 
 
-    flashLightTarget.position.x = playerModel.position.x + 10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerModel.position.z +10*flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.x = playerParent.position.x +10*flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerParent.position.z +10*flashLightDistance * Math.sin(angle);
     flashLightTarget.position.y = 2;
 });
 
@@ -622,7 +618,7 @@ window.addEventListener('keydown', function(event) {
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
-        case 'p': console.log(playerModel.position); break;
+        case 'p': console.log(playerParent.position); break;
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
@@ -669,9 +665,9 @@ function updateBoundingBoxes() {
 function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
         if (playerModelBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
-            var x = playerModel.position.x;
-            var y = playerModel.position.y;
-            var z = playerModel.position.z;
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -685,9 +681,9 @@ function checkChestCollisions() {
 function checkInvisibleWallsCollisions() {
     for(let i = 0; i< wallsBoundingBoxes.length; i++){
         if (playerModelBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
-            var x = playerModel.position.x;
-            var y = playerModel.position.y;
-            var z = playerModel.position.z;
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=10 && x>=-10 && z<=10 && z>=-10){
                 return false;
             }
@@ -704,48 +700,49 @@ window.addEventListener('mousemove', function(event) {
 
     angle += deltaX * rotationSpeed;
     
-    // Set flashlight position and target based on angle
     flashHolder.position.x = flashLightDistance * Math.cos(angle);
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
+    flashHolder.position.y = 10;
 
-    flashLightTarget.position.x = playerModel.position.x + 10 * flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerModel.position.z + 10 * flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
+    flashLightTarget.position.x = playerParent.position.x + 10 * flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerParent.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.y = 10;
 
-    // Adjust player orientation to match flashlight direction, with a 45-degree correction
-    if (playerModel) {
-        playerModel.rotation.y = angle + Math.PI / 3; // Adjust by 45 degrees
-    }
+    flashHolder.lookAt(flashLightTarget.position);
+    flashHolder.rotateY(-Math.PI/2);
 });
 
 
 function handleCollisions(direction) {
     // Store the current position
-    const oldPlayerModelPosition = playerModel.position.clone();
+    const oldPlayerModelPosition = playerParent.position.clone();
     const oldCameraPosition = camera.position.clone();
-
+    let playerAngle = 0;
     // Try moving the player in the specified direction
     if (direction === 'forward') {
-        playerModel.position.z -= moveSpeed;
+        playerParent.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
     } else if (direction === 'backward') {
-        playerModel.position.z += moveSpeed;
+        playerParent.position.z += moveSpeed;
         camera.position.z += moveSpeed;
+        playerAngle = Math.PI;
     } else if (direction === 'left') {
-        playerModel.position.x -= moveSpeed;
+        playerParent.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
+        playerAngle = -Math.PI/2;
     } else if (direction === 'right') {
-        playerModel.position.x += moveSpeed;
+        playerParent.position.x += moveSpeed;
         camera.position.x += moveSpeed;
+        playerAngle = Math.PI/2;
     }
 
+    playerModel.rotation.y = playerAngle;
     // Update the bounding box after the attempted movement
     playerModelBoundingBox.setFromObject(playerModel);
 
     // Check if the player has collided with the wall or a chest, revert position if true
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
-        playerModel.position.copy(oldPlayerModelPosition);
+        playerParent.position.copy(oldPlayerModelPosition);
         camera.position.copy(oldCameraPosition);
         //Play sound when collide with walls
         if (!paradisoWallSound.isPlaying) {
@@ -759,7 +756,7 @@ function handleCollisions(direction) {
 
 // Update minimap
 function updatePathTrail() {
-    pathPoints.push(new THREE.Vector3(playerModel.position.x/15, 0, playerModel.position.z/15));
+    pathPoints.push(new THREE.Vector3(playerParent.position.x/15, 0, playerParent.position.z/15));
     pathGeometry.setFromPoints(pathPoints);
     pathLine.computeLineDistances();
 }

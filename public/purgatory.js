@@ -20,22 +20,31 @@ var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
 
 //Load and add model
+const gltfLoader = new GLTFLoader();
+var playerParent = new THREE.Object3D();
+var flashHolder = new THREE.Object3D();
+
+gltfLoader.load('./assets/model/cgv-torch.glb', (gltf) => {
+    flashHolder.add(gltf.scene);
+    flashHolder.scale.set(0.5, 0.5, 0.5);
+    playerParent.add(flashHolder); // Attach it to the player
+}, undefined, (error) => {
+    console.error('An error happened while loading the flashLight model:', error);
+});
+
+
+scene.add(playerParent);
 var playerModel;
 let mixer;
 let walkAction;
-var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
-const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
     playerModel = gltf.scene;
     playerModel.scale.set(1, 1, 1); // Adjust scale as needed
-    playerModel.position.set(0, 0, 0);
+    playerParent.position.set(0, -10, 0);
     playerModel.rotateY(Math.PI);
-    scene.add(playerModel);
-    playerModel.add(flashHolder); // Attach it to the cube
-    
-    mixer = new THREE.AnimationMixer(playerModel);
+    playerParent.add(playerModel);
 
-    // Combine all animations into a single walk action
+    mixer = new THREE.AnimationMixer(playerModel);
     const combinedTracks = gltf.animations.reduce((tracks, clip) => {
         return tracks.concat(clip.tracks);
     }, []);
@@ -43,7 +52,6 @@ gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
     walkAction = mixer.clipAction(walkClip);
     walkAction.loop = THREE.LoopRepeat;
 
-    
     render();
 }, undefined, (error) => {
     console.error('An error happened while loading the player model:', error);
@@ -288,8 +296,6 @@ for(i = 0; i < chests.length; i++){
 
 
 // Flashlight setupas
-var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
-var flashHolder = new THREE.Mesh(flashGeometry, phongMaterial);
 
 var flashTimeout = 5000;
 var bounceTimeout = 100;
@@ -381,23 +387,23 @@ let angle = 0;
 const rotationSpeed = 0.006; // Speed of arc rotation
 
 window.addEventListener('mousemove', function(event) {
-    // Calculate the horizontal mouse movement
     const mouseX = event.clientX;
     const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
     const deltaX = wrappedMouseX - previousMouseX;
     previousMouseX = wrappedMouseX;
 
-    // Adjust the angle based on mouse movement
     angle += deltaX * rotationSpeed;
-
-    // Update the flashHolder position based on the new angle
+    
     flashHolder.position.x = flashLightDistance * Math.cos(angle);
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
+    flashHolder.position.y = 10;
 
-    flashLightTarget.position.x = playerModel.position.x + 10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerModel.position.z +10*flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
+    flashLightTarget.position.x = playerParent.position.x + 10 * flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerParent.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.y = 10;
+
+    flashHolder.lookAt(flashLightTarget.position);
+    flashHolder.rotateY(-Math.PI/2);
 });
 
 var darknessTimeout = 100;
@@ -488,23 +494,28 @@ function checkInvisibleWallsCollisions() {
 
 function handleCollisions(direction) {
     // Store the current position
-    const oldPlayerModelPosition = playerModel.position.clone();
+    const oldPlayerModelPosition = playerParent.position.clone();
     const oldCameraPosition = camera.position.clone();
-
+    let playerAngle = 0;
     // Try moving the player in the specified direction
     if (direction === 'forward') {
-        playerModel.position.z -= moveSpeed;
+        playerParent.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
     } else if (direction === 'backward') {
-        playerModel.position.z += moveSpeed;
+        playerParent.position.z += moveSpeed;
         camera.position.z += moveSpeed;
+        playerAngle = Math.PI;
     } else if (direction === 'left') {
-        playerModel.position.x -= moveSpeed;
+        playerParent.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
+        playerAngle = -Math.PI/2;
     } else if (direction === 'right') {
-        playerModel.position.x += moveSpeed;
+        playerParent.position.x += moveSpeed;
         camera.position.x += moveSpeed;
+        playerAngle = Math.PI/2;
     }
+
+    playerModel.rotation.y = playerAngle;
 
     // Update the bounding box after the attempted movement
     playerModelBoundingBox.setFromObject(playerModel);

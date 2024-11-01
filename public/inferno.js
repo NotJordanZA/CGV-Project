@@ -24,22 +24,30 @@ camera.position.set(40,40, 40); // Adjust these for the desired view
 camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 
 //Load and add model
+const gltfLoader = new GLTFLoader();
+var playerParent = new THREE.Object3D();
+var flashHolder = new THREE.Object3D();
+gltfLoader.load('./assets/model/cgv-torch.glb', (gltf) => {
+    flashHolder.add(gltf.scene);
+    flashHolder.scale.set(0.5, 0.5, 0.5);
+    playerParent.add(flashHolder); // Attach it to the player
+}, undefined, (error) => {
+    console.error('An error happened while loading the flashLight model:', error);
+});
+
+
+scene.add(playerParent);
 var playerModel;
 let mixer;
 let walkAction;
-var phongMaterial = new THREE.MeshPhongMaterial({ color: 0x0095DD });
-const gltfLoader = new GLTFLoader();
 gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
     playerModel = gltf.scene;
     playerModel.scale.set(1, 1, 1); // Adjust scale as needed
-    playerModel.position.set(0, 0, 0);
+    playerParent.position.set(0, -10, 0);
     playerModel.rotateY(Math.PI);
-    scene.add(playerModel);
-    playerModel.add(flashHolder); // Attach it to the cube
+    playerParent.add(playerModel);
 
     mixer = new THREE.AnimationMixer(playerModel);
-
-    // Combine all animations into a single walk action
     const combinedTracks = gltf.animations.reduce((tracks, clip) => {
         return tracks.concat(clip.tracks);
     }, []);
@@ -243,9 +251,19 @@ gltfLoader.load('./assets/inferno/cgv-inferno-map-walls.glb', (gltf) => {
 });
 
 const listener = new THREE.AudioListener();
-camera.add( listener );
-const deathPopupSound = new THREE.Audio( listener );
 const audioLoader = new THREE.AudioLoader();
+camera.add( listener );
+
+const backgroundMusic = new THREE.Audio( listener );
+
+audioLoader.load( './assets/music/inferno.mp3', function( buffer ) {
+	backgroundMusic.setBuffer( buffer );
+	backgroundMusic.setVolume( 1 );
+    backgroundMusic.setLoop(true);
+});
+
+const deathPopupSound = new THREE.Audio( listener );
+
 audioLoader.load( './assets/soundeffects/you-died-sting.mp3', function( buffer ) {
 	deathPopupSound.setBuffer( buffer );
 	deathPopupSound.setVolume( 0.5 );
@@ -273,7 +291,6 @@ audioLoader.load('./assets/soundeffects/inferno-footsteps.mp3', function(buffer)
 window.addEventListener('click', () => {
     if (infernorunningSound.context.state === 'suspended') {
         infernorunningSound.context.resume().then(() => {
-            console.log('Audio context resumed');
         });
     }
 });
@@ -343,8 +360,6 @@ for(i = 0; i < chests.length; i++){
 // Cube setup
 
 // Flashlight setupas
-var flashGeometry = new THREE.BoxGeometry(1, 2, 1);
-var flashHolder = new THREE.Mesh(flashGeometry, phongMaterial);
 
 var flashTimeout = 5000;
 var bounceTimeout = 100;
@@ -464,18 +479,15 @@ function interactWithObject(){
     }else if(atItem){
         const currentItem = checkAtItem(); // Get the item object the player is interacting with
             playerItemCount++;
-            console.log("Pcount ", playerItemCount);
             removeItem(currentItem);
             const modelPath = currentItem.modelPath.toLowerCase();
             // Check item type instead of modelPath
             if (modelPath.includes("knife")) {
-                console.log("Playing knife sound for knife item");
                 if (!infknifeSound.isPlaying) {
                     infknifeSound.play();
                 }
             }
                 else if(modelPath.includes("scroll")) {
-                    console.log("Playing sound for scroll item");
                     if (!infscrollSound.isPlaying) {
                         infscrollSound.play();
                     }
@@ -498,8 +510,8 @@ var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
 var moveSpeed = 0.75;
-var flashLightDistance = 10;
-let infernoisRunning=false//sound
+var flashLightDistance = 15;
+let infernoisRunning=false;//sound
 let previousMouseX = window.innerWidth / 2; 
 let angle = 0;
 const rotationSpeed = 0.006; 
@@ -514,24 +526,24 @@ window.addEventListener('mousemove', function(event) {
     
     flashHolder.position.x = flashLightDistance * Math.cos(angle);
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
+    flashHolder.position.y = 20;
 
-    flashLightTarget.position.x = playerModel.position.x + 10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerModel.position.z +10*flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
+    flashLightTarget.position.x = playerParent.position.x + 10 * flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerParent.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.y = 20;
+
+    flashHolder.lookAt(flashLightTarget.position);
+    flashHolder.rotateY(-Math.PI/2);
 });
 
 var darknessTimeout = 100;
 //footsteps sound
 function updateinfernoRunningSound() {
-    console.log(`Update Sound - Forward: ${moveForward}, Backward: ${moveBackward}, Left: ${moveLeft}, Right: ${moveRight}`);
     if ((moveForward || moveBackward || moveLeft || moveRight) && !infernorunningSound.isPlaying) {
         infernorunningSound.play(); // Start sound
-        console.log("Running sound started");
         infernoisRunning = true;
     } else if (!moveForward && !moveBackward && !moveLeft && !moveRight && infernorunningSound.isPlaying) {
         infernorunningSound.stop(); // Stop sound
-        console.log("Running sound stopped");
         infernoisRunning = false;
     }
 }
@@ -622,23 +634,28 @@ function checkInvisibleWallsCollisions() {
 
 function handleCollisions(direction) {
     // Store the current position
-    const oldPlayerModelPosition = playerModel.position.clone();
+    const oldPlayerModelPosition = playerParent.position.clone();
     const oldCameraPosition = camera.position.clone();
-
+    let playerAngle = 0;
     // Try moving the player in the specified direction
     if (direction === 'forward') {
-        playerModel.position.z -= moveSpeed;
+        playerParent.position.z -= moveSpeed;
         camera.position.z -= moveSpeed;
     } else if (direction === 'backward') {
-        playerModel.position.z += moveSpeed;
+        playerParent.position.z += moveSpeed;
         camera.position.z += moveSpeed;
+        playerAngle = Math.PI;
     } else if (direction === 'left') {
-        playerModel.position.x -= moveSpeed;
+        playerParent.position.x -= moveSpeed;
         camera.position.x -= moveSpeed;
+        playerAngle = -Math.PI/2;
     } else if (direction === 'right') {
-        playerModel.position.x += moveSpeed;
+        playerParent.position.x += moveSpeed;
         camera.position.x += moveSpeed;
+        playerAngle = Math.PI/2;
     }
+
+    playerModel.rotation.y = playerAngle;
 
     // Update the bounding box after the attempted movement
     playerModelBoundingBox.setFromObject(playerModel);
@@ -662,10 +679,7 @@ function handleCollisions(direction) {
                 infWallSound2.play();
             }
         }
-    
-
 }
-
 else{
         updatePathTrail();
     }
@@ -679,19 +693,13 @@ window.addEventListener('mousemove', function(event) {
 
     angle += deltaX * rotationSpeed;
     
-    // Set flashlight position and target based on angle
     flashHolder.position.x = flashLightDistance * Math.cos(angle);
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
     flashHolder.position.y = 2; 
 
-    flashLightTarget.position.x = playerModel.position.x + 10 * flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerModel.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.x = playerParent.position.x +10*flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerParent.position.z +10*flashLightDistance * Math.sin(angle);
     flashLightTarget.position.y = 2;
-
-    // Adjust player orientation to match flashlight direction, with a 45-degree correction
-    if (playerModel) {
-        playerModel.rotation.y = angle + Math.PI / 3; // Adjust by 45 degrees
-    }
 });
 
 
@@ -749,8 +757,8 @@ function render() {
         interactMessage.style.opacity = 0;
     }
     if (mixer) {
-        const delta = clock.getDelta(); // Use a THREE.Clock instance to get the delta time
-        mixer.update(delta); // Update the animation mixer
+        const delta = clock.getDelta();
+        mixer.update(delta); 
     }
     if (flashTimeout > 100) {
         darknessTimeout = 10000;
@@ -832,4 +840,5 @@ function render() {
 }
 
 // Initial level setup
+backgroundMusic.play();
 setupLevel(currentLevel);
