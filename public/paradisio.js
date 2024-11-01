@@ -70,6 +70,7 @@ var playerFalling = false;
 let fallSpeed = 0;
 let jumpSpeed = 1;
 let fallJumping = true;
+var gameCompleted = false;
 var darknessTimeout = 100;
 var fallingPlayed = false;
 var playedDeathPopup = false;
@@ -88,7 +89,14 @@ const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
-
+const timeText = document.getElementById('time-text');
+const pauseMenu = document.getElementById('pause-menu');
+const restartLevelButton = document.getElementById('restart-level-button');
+const gameFinishedScreen = document.getElementById('game-finished-page');
+restartLevelButton.addEventListener("click", () => {
+    resetLevel();
+    togglePauseMenu()
+});
 
 // Update the vignette intensity based on darknessTimeout
 function updateVignetteIntensity(intensity) {
@@ -535,6 +543,16 @@ function interactWithObject(){
 }
 }
 
+function togglePauseMenu(){
+    if(pauseMenu.style.opacity == 1){
+        pauseMenu.style.opacity = 0;
+        pauseMenu.style.pointerEvents = "none";
+    }else{
+        pauseMenu.style.opacity = 1;
+        pauseMenu.style.pointerEvents = "all";
+    }
+}
+
 // Movement and control variables
 var moveForward = false;
 var moveBackward = false;
@@ -615,20 +633,22 @@ function parplayChestSoundIfNearChest() {
     
 
 window.addEventListener('mousemove', function(event) {
-    const mouseX = event.clientX;
-    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
-    const deltaX = wrappedMouseX - previousMouseX;
-    previousMouseX = wrappedMouseX;
+    if(!gameCompleted){
+        const mouseX = event.clientX;
+        const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
+        const deltaX = wrappedMouseX - previousMouseX;
+        previousMouseX = wrappedMouseX;
 
-    angle += deltaX * rotationSpeed;
-    
-    flashHolder.position.x = flashLightDistance * Math.cos(angle);
-    flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
+        angle += deltaX * rotationSpeed;
+        
+        flashHolder.position.x = flashLightDistance * Math.cos(angle);
+        flashHolder.position.z = flashLightDistance * Math.sin(angle);
+        flashHolder.position.y = 2; 
 
-    flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
+        flashLightTarget.position.x = cube.position.x + 10*flashLightDistance * Math.cos(angle);
+        flashLightTarget.position.z = cube.position.z +10*flashLightDistance * Math.sin(angle);
+        flashLightTarget.position.y = 2;
+    }
 });
 
 window.addEventListener('keydown', function(event) {
@@ -645,6 +665,7 @@ window.addEventListener('keydown', function(event) {
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
+        case 'Escape': togglePauseMenu(); break;
     }parupdateRunningSound();
 });
 
@@ -775,6 +796,23 @@ function updatePlayerPosition() {
     }
 }
 
+function millisToMinutesAndSeconds(millis) {
+    var minutes = Math.floor(millis / 60000);
+    var seconds = Math.floor(((millis % 60000) / 1000).toFixed(0));
+    return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+  }
+
+function displayGameFinishedScreen(){
+    const startTime = parseInt(localStorage.getItem("startTime"));
+    const endTime = Date.now();
+    const totalTime = endTime - startTime;
+    var gameOverScreenTimer = null;
+    gameOverScreenTimer = setTimeout(() => {
+        timeText.innerText = "Well done! Your soul is absconded; you took " + millisToMinutesAndSeconds(totalTime) + " to traverse the afterlife!";
+        gameFinishedScreen.style.opacity = 1;
+    }, 10000);  
+}
+
 window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
@@ -785,7 +823,10 @@ function render() {
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
-        goToLevel(1);
+        if(!gameCompleted){
+            displayGameFinishedScreen();
+        }
+        gameCompleted = true;
     }
     if (atChest || atItem) {
         interactMessage.style.opacity = 1;
@@ -828,7 +869,7 @@ function render() {
         resetLevelTimeout -= 0.03;
         itemTextMessage.style.opacity = 0;
         interactMessage.style.opacity = 0;
-    }else{
+    }else if(!gameCompleted){
         updatePlayerPosition();
         updateBoundingBoxes();
         checkAtChest();
