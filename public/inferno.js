@@ -80,6 +80,8 @@ const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
 const pauseMenu = document.getElementById('pause-menu');
 const restartLevelButton = document.getElementById('restart-level-button');
+const plotText = document.getElementById('plot-text');
+const plotScreen = document.getElementById('plot-page');
 restartLevelButton.addEventListener("click", () => {
     resetLevel();
     togglePauseMenu()
@@ -93,6 +95,22 @@ function updateVignetteIntensity(intensity) {
 
 function showGameOverScreen() {
     gameOverMessage.style.opacity = 1; // Fade in the "You Died" message
+}
+
+function displayPlotScreen(){
+    var plotScreenTimer = null;
+    plotText.innerText = 
+        "Black. Your vision is consumed by an inescapable darkness - though your body is gifted no such absence.\n" +
+        "There is a pervasive heat that you feel beyond your skin, as though your innards are in a constant cycle of melting and reconstruction.\n\n" +
+        "The abyss fades; the scalding caresse of the inferno does not.\n\n" +
+        "“Where… am I?”\n\n" +
+        "You wish your confusion was confined to your location. You know nothing.\n" +
+        "Who are you? How did you get here?\n\n" +
+        "There is but one thing that you know to be certain: you cannot let the darkness grab hold of you.";
+    plotScreen.style.opacity = 1;
+    plotScreenTimer = setTimeout(() => {
+        plotScreen.style.opacity = 0;
+    }, 25000);  
 }
 
 function resetLevel() {
@@ -711,8 +729,13 @@ var flickerTimeout = 0;
 var resetLevelTimeout = 10;
 var playedDeathPopup = false;
 var deathSoundPlayed = false;
+var atStart = true;
 
 function render() {
+    if (atStart) {
+        atStart = false;
+        displayPlotScreen();
+    }
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;

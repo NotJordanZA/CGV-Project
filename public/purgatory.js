@@ -85,6 +85,8 @@ const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
 const pauseMenu = document.getElementById('pause-menu');
 const restartLevelButton = document.getElementById('restart-level-button');
+const plotText = document.getElementById('plot-text');
+const plotScreen = document.getElementById('plot-page');
 restartLevelButton.addEventListener("click", () => {
     resetLevel();
     togglePauseMenu()
@@ -96,6 +98,22 @@ function updateVignetteIntensity(intensity) {
 }
 const chestTextMessage = document.getElementById('chest-text');
 
+function displayPlotScreen(){
+    var plotScreenTimer = null;
+    plotText.innerText = 
+        "Retrieving the third of these forsaken items, you find that the black abyss grows in size; drowning out the light with which you ran from it.\n\n" +
+        "Before you, in the inky void, there lies a form - one more human than you thought you would find here. You step closer, and…\n" +
+        "No… Could it be?\n\n" +
+        "You reach out.\n" +
+        "“Liora? No!”\n" +
+        "She is whisked away, consumed by the black.\n\n" +
+        "Your vision begins to clear, but you find that the infernal heat is no more. Instead, you are surrounded by an overwhelming melancholy, leaving a palpable weight surrounding your body.\n\n" +
+        "Is this… No, it can’t be.";
+    plotScreen.style.opacity = 1;
+    plotScreenTimer = setTimeout(() => {
+        plotScreen.style.opacity = 0;
+    }, 25000);  
+}
 
 function updateHearts() {
     const heartContainer = document.getElementById('heart-container');
@@ -874,8 +892,13 @@ window.addEventListener('resize', function() {
 var resetLevelTimeout = 10;
 var playedDeathPopup = false;
 var deathSoundPlayed = false;
+var atStart = true;
 
 function render() {
+    if (atStart) {
+        atStart = false;
+        displayPlotScreen();
+    }
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
