@@ -20,7 +20,7 @@ var d = 40; // Frustum size (affects the zoom level)
 var camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
 
 // Position the camera for an isometric view (45 degrees)
-camera.position.set(40, 40, 40); // Adjust these for the desired view
+camera.position.set(40,40, 40); // Adjust these for the desired view
 camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 
 // Map configuration
@@ -239,7 +239,80 @@ audioLoader.load( './assets/soundeffects/death-moan.mp3', function( buffer ) {
 	deathSound.setVolume( 0.5 );
 });
 
+const infernorunningSound= new THREE.Audio(listener);
 
+audioLoader.load('./assets/soundeffects/inferno-footsteps.mp3', function(buffer) {
+    infernorunningSound.setBuffer(buffer);
+    infernorunningSound.setLoop(true);
+    infernorunningSound.setVolume(0.9);
+}, undefined, (error) => {
+    console.error('Error loading sound:', error);
+
+});
+//runningsound stops when keys awsd are not being pressed
+window.addEventListener('click', () => {
+    if (infernorunningSound.context.state === 'suspended') {
+        infernorunningSound.context.resume().then(() => {
+            console.log('Audio context resumed');
+        });
+    }
+});
+//sound effect when you knock into a wall
+const infWallSound1 = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/inferno-walls.mp3', (buffer) => {
+   infWallSound1.setBuffer(buffer);
+   infWallSound1.setVolume(0.8);
+}, undefined, (error) => {
+    console.error('Error loading wall collision sound:', error);
+});
+const infWallSound2 = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/inferno-spooky-breeze.mp3', (buffer) => {
+   infWallSound2.setBuffer(buffer);
+   infWallSound2.setVolume(0.8);
+}, undefined, (error) => {
+    console.error('Error loading wall collision sound:', error);
+});
+//Object sound
+const infobjectSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/objectsound.mp3', function(buffer) {
+    infobjectSound.setBuffer(buffer);
+    infobjectSound.setLoop(false);
+    infobjectSound.setVolume(5.0);
+}, undefined, (error) => {
+    console.error('Error loading  object sound:', error);
+});
+//chest sound
+const infchestSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/chestsound.mp3', function(buffer) {
+    infchestSound.setBuffer(buffer);
+    infchestSound.setLoop(false);
+    infchestSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading chest sound:', error);
+});
+//chain sound
+const infchainSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/chainsound.mp3', (buffer) => {
+    infchainSound.setBuffer(buffer);
+infchainSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading chain sound:', error);
+});
+//knife sound
+const infknifeSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/knife-slice-sound.mp3', (buffer) => {
+    infknifeSound.setBuffer(buffer);
+infknifeSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading knife sound:', error);
+});
+const infscrollSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/scroll-sound.mp3', (buffer) => {
+    infscrollSound.setBuffer(buffer);
+infscrollSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading scroll sound:', error);
+});
 // Chest light setup
 for(i = 0; i < chests.length; i++){
     var chestLight  = new THREE.PointLight(0xb8860b, 2000);
@@ -292,6 +365,58 @@ function checkAtChest() {
     }
 }
 
+let infObjectSoundPlayed = false;
+
+function playObjectSoundIfNearItem() {
+    const playerPosition = cube.position;
+    const distanceThreshold = 100; // how close the player needs to be to trigger the sound
+
+    let isNearItem = false;
+
+    for (let i = 0; i < items.length; i++) {
+        const itemPosition = items[i].position;
+        const distance = playerPosition.distanceTo(itemPosition);
+
+        if (distance <= distanceThreshold) {
+            isNearItem = true;
+            break;
+        }
+    }
+
+    // Play sound if near an item and 15 seconds have passed since the last play
+    if (isNearItem && !infObjectSoundPlayed) {
+        infobjectSound.play();
+        infObjectSoundPlayed = true;
+
+        // Set a 15-second timer to allow the sound to play again
+        setTimeout(() => {
+            infObjectSoundPlayed = false;
+        }, 20000); //20 seconds
+    }
+}
+
+
+// Initialize chest play states for each chest with a default of `false`
+
+let chestPlayStates = chests.map(() => ({ isPlayed: false }));
+
+function playChestSoundIfNearChest() {
+    const playerPosition = cube.position;
+    const chestDistanceThreshold = 70;
+
+    chests.forEach((chest, index) => {
+        const chestPosition = new THREE.Vector3(chest.x, 0, chest.z);
+        const distance = playerPosition.distanceTo(chestPosition);
+
+        // Play the sound only if the player is within range and the sound hasn't played for this chest yet
+        if (distance <= chestDistanceThreshold && !chestPlayStates[index].isPlayed) {
+            infchestSound.play();
+            chestPlayStates[index].isPlayed = true; // Mark as played to prevent re-triggering
+        }
+    });
+}
+
+
 // Check if player is near item
 function checkAtItem() {
     var x = cube.position.x;
@@ -331,10 +456,40 @@ function interactWithObject(){
         flashTimeout = 5000;
         bounceTimeout = 100;
     }else if(atItem){
-        playerItemCount++;
-        removeItem(checkAtItem());
-    }
+        const currentItem = checkAtItem(); // Get the item object the player is interacting with
+            playerItemCount++;
+          
+            removeItem(currentItem);
+            const modelPath = currentItem.modelPath.toLowerCase();
+            // Check item type instead of modelPath
+            if (modelPath.includes("knife")) {
+                console.log("Playing knife sound for knife item");
+                if (!infknifeSound.isPlaying) {
+                    infknifeSound.play();
+                }
+            }
+                else if(modelPath.includes("scroll")) {
+                    console.log("Playing sound for scroll item");
+                    if (!infscrollSound.isPlaying) {
+                        infscrollSound.play();
+                    }
+                } else{
+                    if (!infchainSound.isPlaying) {
+                    infchainSound.play();
+
+                }
+
+                
+            // } else if (currentItem.getType() === "chain") {
+            //     console.log("Playing key sound for chain item");
+            //     if (!infchainSound.isPlaying) {
+            //         infchainSound.play();
+            //     }
+            }
+    
 }
+}
+
 
 function togglePauseMenu(){
     if(pauseMenu.style.opacity == 1){
@@ -353,7 +508,7 @@ var moveLeft = false;
 var moveRight = false;
 var moveSpeed = 0.75;
 var flashLightDistance = 10;
-
+let infernoisRunning=false//sound
 let previousMouseX = window.innerWidth / 2; 
 let angle = -45;
 const rotationSpeed = 0.006; 
@@ -376,6 +531,19 @@ window.addEventListener('mousemove', function(event) {
 });
 
 var darknessTimeout = 100;
+//footsteps sound
+function updateinfernoRunningSound() {
+    console.log(`Update Sound - Forward: ${moveForward}, Backward: ${moveBackward}, Left: ${moveLeft}, Right: ${moveRight}`);
+    if ((moveForward || moveBackward || moveLeft || moveRight) && !infernorunningSound.isPlaying) {
+        infernorunningSound.play(); // Start sound
+        console.log("Running sound started");
+        infernoisRunning = true;
+    } else if (!moveForward && !moveBackward && !moveLeft && !moveRight && infernorunningSound.isPlaying) {
+        infernorunningSound.stop(); // Stop sound
+        console.log("Running sound stopped");
+        infernoisRunning = false;
+    }
+}
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
         case '1': goToLevel(0); break; // Move to Level 1
@@ -391,7 +559,7 @@ window.addEventListener('keydown', function(event) {
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
         case 'Escape': togglePauseMenu(); break;
-    }
+    }updateinfernoRunningSound(); //sound
 });
 
 window.addEventListener('keyup', function(event) {
@@ -400,7 +568,7 @@ window.addEventListener('keyup', function(event) {
         case 's': moveBackward = false; break;
         case 'a': moveLeft = false; break;
         case 'd': moveRight = false; break;
-    }
+    }updateinfernoRunningSound();
 });
 
 var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
@@ -491,7 +659,24 @@ function handleCollisions(direction) {
         // console.log("I ams stuck");
         cube.position.copy(oldCubePosition);
         camera.position.copy(oldCameraPosition);
-    }else{
+         //collision sound
+         //Play a random wall collision sound
+        
+         if (Math.random() < 0.3) { 
+            const randomChoice = Math.random() < 0.5 ? 1 : 2;
+            if (randomChoice === 1 && !infWallSound1.isPlaying) {
+                infWallSound2.stop();
+                infWallSound1.play();
+            } else if (randomChoice === 2 && !infWallSound2.isPlaying) {
+                infWallSound1.stop();
+                infWallSound2.play();
+            }
+        }
+    
+
+}
+
+else{
         updatePathTrail();
     }
 }
@@ -540,7 +725,7 @@ function render() {
     }
 
     if (flashTimeout > 100) {
-        darknessTimeout = 100;
+        darknessTimeout = 10000;
         if (flickerTimeout === 0 && Math.random() < 0.006){
             flickerTimeout = 30;
         }
@@ -597,6 +782,8 @@ function render() {
         updateBoundingBoxes();
         checkAtChest();
         checkAtItem();
+        playObjectSoundIfNearItem();
+        playChestSoundIfNearChest();
     }
 
     if(resetLevelTimeout <= 0){

@@ -4,12 +4,14 @@ import { level1Config } from './level1.js';
 import { level2Config } from './level2.js';
 import { level3Config, applyLevel3Lighting} from './level3.js';
 import { item } from './item.js';
+import { biblicalAngel } from './angel.js';
 
 // Set up the canvas and renderer
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
 
 var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.shadowMap.enabled = true;
 renderer.setSize(WIDTH, HEIGHT);
 renderer.setClearColor( 0xDDDDDD, 1);
 document.body.appendChild(renderer.domElement);
@@ -70,7 +72,11 @@ let jumpSpeed = 1;
 let fallJumping = true;
 var gameCompleted = false;
 var darknessTimeout = 100;
+var fallingPlayed = false;
+var playedDeathPopup = false;
+var deathSoundPlayed = false;
 var items = [];
+var angels = [];
 var chests = [
     {x: 190, z:135},
     {x: 250, z:-100},
@@ -117,11 +123,15 @@ function resetLevel() {
     paridisioMapTrapped.visible = false;
     fallSpeed = 0;
     fallJumping = true;
+    playerFalling = false;
     jumpSpeed = 1;
     mapScene.clear();
     pathPoints = [];
     items = [];
     playerItemCount = 0;
+    fallingPlayed = false;
+    playedDeathPopup = false;
+    deathSoundPlayed = false;
     gameOverMessage.style.opacity = 0;
     vignette.style.opacity = 0;
 
@@ -184,7 +194,6 @@ let paridisioMapTrapped;
 let paridisioChests;
 let paridisioWalls;
 let paridisioWallsBoundingBox;
-
 
 applyLevel3Lighting(scene);
 itemCount = 3;
@@ -250,6 +259,81 @@ audioLoader.load( './assets/soundeffects/death-falling.mp3', function( buffer ) 
     fallingSound.setLoop(false);
 	fallingSound.setVolume( 0.5 );
 });
+//sounds
+const parrunningSound = new THREE.Audio(listener);
+
+audioLoader.load('./assets/soundeffects/paradiso-running.mp3', function(buffer) {
+    parrunningSound.setBuffer(buffer);
+    parrunningSound.setLoop(true);
+    parrunningSound.setVolume(1.0);
+}, undefined, (error) => {
+    console.error('Error loading sound:', error);
+
+});
+//Object sound
+const parobjectSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/objectsound.mp3', function(buffer) {
+    parobjectSound.setBuffer(buffer);
+    parobjectSound.setLoop(false);
+    parobjectSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading  object sound:', error);
+});
+//chest sound
+const parchestSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/chestsound.mp3', function(buffer) {
+    parchestSound.setBuffer(buffer);
+    parchestSound.setLoop(false);
+    parchestSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading chest sound:', error);
+});
+//key sound
+const parkeySound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/keysound.mp3', (buffer) => {
+    parkeySound.setBuffer(buffer);
+    parkeySound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading key sound:', error);
+});
+//water drop sound
+const pardropSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/drop-sound.mp3', function(buffer) {
+    pardropSound.setBuffer(buffer);
+    pardropSound.setLoop(false);
+    pardropSound.setVolume(2.0);
+}, undefined, (error) => {
+    console.error('Error loading drop sound:', error);
+});
+
+//heart/victory sound
+const parheartSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/heartvictorysound.mp3', function(buffer) {
+    parheartSound.setBuffer(buffer);
+    parheartSound.setLoop(false);
+    parheartSound.setVolume(0.8);
+}, undefined, (error) => {
+    console.error('Error loading heart/victory sound:', error);
+});
+
+const paradisoWallSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/paradiso-walls.mp3', (buffer) => {
+    paradisoWallSound .setBuffer(buffer);
+    paradisoWallSound .setVolume(0.8);
+}, undefined, (error) => {
+    console.error('Error loading wall collision sound:', error);
+});
+
+
+
+window.addEventListener('click', () => {
+    if (parrunningSound.context.state === 'suspended') {
+        parrunningSound.context.resume().then(() => {
+            console.log('Audio context resumed');
+        });
+    }
+});
+
 
 // Chest light setup
 for(i = 0; i < chests.length; i++){
@@ -336,6 +420,23 @@ flashLight.target = flashLightTarget;
 
 cube.add(flashHolder); // Attach it to the cube
 
+// Angel setup
+let angel1 = new biblicalAngel(scene, new THREE.Vector3(-120, 0, 125), new THREE.Vector3(180, 0, 125));
+let angel2 = new biblicalAngel(scene, new THREE.Vector3(-415, 0, -295), new THREE.Vector3(-175, 0, -295));
+let angel3 = new biblicalAngel(scene, new THREE.Vector3(305, 0, -235), new THREE.Vector3(120, 0, -234));
+angels.push(angel1);
+angels.push(angel2);
+angels.push(angel3);
+
+// {x: -113.75, y: 0, z: 122.5}
+// {x: 183.75, y: 0, z: 126.25}
+
+// {x: -415, y: 0, z: -295}
+// {x: -175, y: 0, z: -295}
+
+// {x: 307.5, y: 0, z: -233.75}
+// {x: 120, y: 0, z: -233.75}
+
 // Check if player is near chest
 function checkAtChest() {
     var x = cube.position.x;
@@ -409,9 +510,37 @@ function interactWithObject(){
         darknessTimeout = 0;
         playerFalling = true;
     }else if(atItem){
+        const currentItem = checkAtItem(); // Get the item object the player is interacting with
         playerItemCount++;
         removeItem(checkAtItem());
+
+        const modelPath = currentItem.modelPath.toLowerCase();
+
+        if (modelPath.includes("key")) {
+            console.log("Playing key sound for item with key in modelPath");
+            if (!parkeySound.isPlaying) {
+                parkeySound.play();
+            }
+        } else if (modelPath.includes("heart")) {
+            console.log("Playing heart sound for item with heart in modelPath");
+            if (!parheartSound.isPlaying) {
+                parheartSound.play();
+            }
+    
+}else if (modelPath.includes("drop")) {
+    console.log("Playing drop sound for item withdrop in modelPath");
+    if (!pardropSound.isPlaying) {
+        pardropSound.play();
     }
+
+} 
+     else {
+        console.log("Playing default object sound");
+        if (!parobjectSound.isPlaying) {
+            parobjectSound.play();
+        }
+}
+}
 }
 
 function togglePauseMenu(){
@@ -435,6 +564,73 @@ var flashLightDistance = 10;
 let previousMouseX = window.innerWidth / 2;
 let angle = -45;
 const rotationSpeed = 0.006;
+let isRunning=false//sound
+
+function parupdateRunningSound() {
+    console.log(`Update Sound - Forward: ${moveForward}, Backward: ${moveBackward}, Left: ${moveLeft}, Right: ${moveRight}`);
+    if ((moveForward || moveBackward || moveLeft || moveRight) && !parrunningSound.isPlaying) {
+        parrunningSound.play(); // Start sound
+        console.log("Running sound started");
+        isRunning = true;
+    } else if (!moveForward && !moveBackward && !moveLeft && !moveRight && parrunningSound.isPlaying) {
+        parrunningSound.stop(); // Stop sound
+        console.log("Running sound stopped");
+        isRunning = false;
+    }
+}
+let parObjectSoundPlayed = false;
+
+function parplayObjectSoundIfNearItem() {
+    const playerPosition = cube.position;
+    const distanceThreshold = 100; // how close the player needs to be to trigger the sound
+
+    let isNearItem = false;
+
+    for (let i = 0; i < items.length; i++) {
+        const itemPosition = items[i].position;
+        const distance = playerPosition.distanceTo(itemPosition);
+
+        if (distance <= distanceThreshold) {
+            isNearItem = true;
+            break;
+        }
+    }
+
+    // Play sound if near an item and 15 seconds have passed since the last play
+    if (isNearItem && !parObjectSoundPlayed) {
+        parobjectSound.play();
+        parObjectSoundPlayed = true;
+
+        // Set a 15-second timer to allow the sound to play again
+        setTimeout(() => {
+            parObjectSoundPlayed = false;
+        }, 20000); //20 seconds
+    }
+}
+
+
+// Initialize chest play states for each chest with a default of `false`
+
+let chestPlayStates = chests.map(() => ({ isPlayed: false }));
+
+function parplayChestSoundIfNearChest() {
+    const playerPosition = cube.position;
+    const chestDistanceThreshold = 70;
+
+    chests.forEach((chest, index) => {
+        const chestPosition = new THREE.Vector3(chest.x, 0, chest.z);
+        const distance = playerPosition.distanceTo(chestPosition);
+
+        // Play the sound only if the player is within range and the sound hasn't played for this chest yet
+        if (distance <= chestDistanceThreshold && !chestPlayStates[index].isPlayed) {
+            parchestSound.play();
+            chestPlayStates[index].isPlayed = true; // Mark as played to prevent re-triggering
+        }
+    });
+}
+
+
+    
 
 window.addEventListener('mousemove', function(event) {
     if(!gameCompleted){
@@ -470,7 +666,7 @@ window.addEventListener('keydown', function(event) {
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
         case 'Escape': togglePauseMenu(); break;
-    }
+    }parupdateRunningSound();
 });
 
 window.addEventListener('keyup', function(event) {
@@ -479,7 +675,7 @@ window.addEventListener('keyup', function(event) {
         case 's': moveBackward = false; break;
         case 'a': moveLeft = false; break;
         case 'd': moveRight = false; break;
-    }
+    }parupdateRunningSound();
 });
 
 var cubeBoundingBox = new THREE.Box3().setFromObject(cube);
@@ -568,6 +764,11 @@ function handleCollisions(direction) {
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
         cube.position.copy(oldCubePosition);
         camera.position.copy(oldCameraPosition);
+        //Play sound when collide with walls
+        if (!paradisoWallSound.isPlaying) {
+            paradisoWallSound.play();
+        }
+    
     }else{ // Update minimap
         updatePathTrail();
     }
@@ -616,10 +817,7 @@ window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-var flickerTimeout = 0;
 var resetLevelTimeout = 10;
-var fallingPlayed = false;
-var playedDeathPopup = false;
 
 function render() {
     if(playerItemCount == itemCount){
@@ -653,8 +851,18 @@ function render() {
                 playedDeathPopup = true;
             }
         }else{
-            showGameOverScreen();
-            deathPopupSound.play();
+            if(!deathSoundPlayed){
+                deathSoundPlayed = true;
+                deathSound.play();
+            }
+            if(!playedDeathPopup){
+                var deathPopupTimer = null;
+                deathPopupTimer = setTimeout(() => {
+                    showGameOverScreen();
+                    deathPopupSound.play();
+                }, 2000);
+                playedDeathPopup = true;
+            }
         }
         flashTimeout = 0;
         bounceTimeout = 0;
@@ -666,6 +874,13 @@ function render() {
         updateBoundingBoxes();
         checkAtChest();
         checkAtItem();
+        angels.forEach(angel => {
+            if(angel.checkAtAngel(cube.position.x, cube.position.z)){
+                darknessTimeout -= 100;
+            }
+        })
+        parplayObjectSoundIfNearItem();
+        parplayChestSoundIfNearChest();
     }
 
     if(resetLevelTimeout <= 0){
@@ -683,6 +898,11 @@ function render() {
     if(skyBox){
         skyBox.position.copy(camera.position);
     }
+    
+    angels.forEach(angel => {
+        angel.moveAngel();
+        angel.rotateRings();
+    })
 
     requestAnimationFrame(render);
     mapRenderer.render(mapScene, mapCamera);

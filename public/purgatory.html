@@ -88,14 +88,58 @@
         pointer-events:inherit;
         cursor: pointer;
       }
+      #game-over-message2 {
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: auto;
+            height: auto;
+            color: white;
+            font-size: 2rem; /* Adjust size as needed */
+            text-align: center;
+            opacity: 0; /* Start invisible */
+            z-index: 1000;
+            transition: opacity 1s ease-in-out;
+            text-shadow: 1px 1px 3px #000; /* Add shadow for readability */
+        }
+
+      #heart-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      gap: 5px;
+      z-index: 1001; /* Make sure hearts appear on top */
+    }
+
+    .heart {
+      width: 30px;
+      height: 30px;
+    }
+
     </style>
   </head>
+    <div id="heart-container">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+    <img src="assets/purgatory/heart.png" class="heart" alt="Heart">
+  </div>
   <body>
+
+    <div id="chest-text" style="opacity: 0; position: absolute; top: 50px; left: 50%; transform: translateX(-50%); color: white; font-size: 20px;">
+      Chest interaction message
+    </div>
+    <div id="game-over-message2" style="opacity: 0; transition: opacity 0.5s;">You Died. Press R to restart.</div>
+
+    
     <p id="object-interact">Press 'E' to Interact</p>
     <div id="item-text-container">
       <p id="item-text"></p>
     </div>
     <img src="assets/death.png" id="game-over-message"></img>
+    
     <div id="vignette"></div>
     <div id="pause-menu">
       <button id="restart-level-button" class="pause-buttons">Restart Level</button>
