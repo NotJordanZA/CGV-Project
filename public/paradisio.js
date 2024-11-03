@@ -673,7 +673,7 @@ var wallsBoundingBoxes = [];
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
     // Update player's bounding box
-    playerModelBoundingBox.setFromObject(playerModel);
+    playerModelBoundingBox.setFromObject(playerParent);
 
     if (paridisioChests && chestsBoundingBoxes.length < 1000) {
         paridisioChests.traverse((child) => {
