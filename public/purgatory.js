@@ -59,31 +59,6 @@ gltfLoader.load('./assets/model/bart2.0.glb', (gltf) => {
     console.error('An error happened while loading the player model:', error);
 });
 
-window.addEventListener('mousemove', function(event) {
-    const mouseX = event.clientX;
-    const wrappedMouseX = (mouseX + window.innerWidth) % window.innerWidth;
-    const deltaX = wrappedMouseX - previousMouseX;
-    previousMouseX = wrappedMouseX;
-
-    angle += deltaX * rotationSpeed;
-    
-    // Set flashlight position and target based on angle
-    flashHolder.position.x = flashLightDistance * Math.cos(angle);
-    flashHolder.position.z = flashLightDistance * Math.sin(angle);
-    flashHolder.position.y = 2; 
-
-    flashLightTarget.position.x = playerParent.position.x + 10 * flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerParent.position.z + 10 * flashLightDistance * Math.sin(angle);
-    flashLightTarget.position.y = 2;
-
-    // Adjust player orientation to match flashlight direction, with a 45-degree correction
-    if (playerModel) {
-        playerModel.rotation.y = angle + Math.PI / 3; // Adjust by 45 degrees
-    }
-});
-
-
-
 // Position the camera for an isometric view (45 degrees)
 camera.position.set(40, 40, 40); // Adjust these for the desired view
 camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
@@ -143,7 +118,6 @@ var chests = [
 
 const vignette = document.getElementById('vignette');
 const gameOverMessage = document.getElementById('game-over-message');
-const gameOverMessage2 = document.getElementById('game-over-message2');
 const interactMessage = document.getElementById('object-interact');
 const itemTextMessage = document.getElementById('item-text');
 const pauseMenu = document.getElementById('pause-menu');
@@ -183,14 +157,14 @@ function updateHearts() {
     heartContainer.innerHTML = ''; // Clear previous hearts
     if (hearts === 0) {
         deathSound.play();
-        document.getElementById('game-over-message').style.opacity = '1';
-        document.getElementById('game-over-message2').style.opacity = '1';
         const vignetteIntensity = THREE.MathUtils.clamp(1 , 0, 1);
         updateVignetteIntensity(vignetteIntensity);
-        var deathPopupTimer = null;
-        deathPopupTimer = setTimeout(() => {
+        var deathPopupTimer = setTimeout(() => {
             showGameOverScreen();
             deathPopupSound.play();
+            var resetLevelTimer = setTimeout(() => {
+                resetLevel();
+            }, 5000);
         }, 1800);
         
       }
@@ -236,7 +210,6 @@ window.addEventListener('keydown', (event) => {
 
 function showGameOverScreen() {
     gameOverMessage.style.opacity = 1; // Fade in the "You Died" message
-    gameOverMessage2.innerText = "You Died! Press R to Restart";
 }
 
 function displayChestMessage() {
@@ -254,7 +227,6 @@ function displayChestMessage() {
 
 function resetLevel() {
     playerParent.position.copy(initialPlayerModelPosition);
-    document.getElementById('game-over-message2').style.opacity = '0';
     camera.position.copy(initialCameraPosition);
 
     items.forEach(item=>{ // Remove items from map
@@ -321,7 +293,7 @@ function setupLevel(level) {
 function goToLevel(level) {
     switch(level){
         case 0:
-            location.href = 'purgatory.html';
+            location.href = 'inferno.html';
             break;
         case 1:
             location.href = 'purgatory.html';
@@ -665,12 +637,14 @@ function interactWithObject() {
 
 
 function togglePauseMenu(){
-    if(pauseMenu.style.opacity == 1){
-        pauseMenu.style.opacity = 0;
+    if(pauseMenu.style.zIndex > 0){
+        pauseMenu.style.zIndex = -999999;
         pauseMenu.style.pointerEvents = "none";
+        pauseMenu.style.cursor = "none";
     }else{
-        pauseMenu.style.opacity = 1;
-        pauseMenu.style.pointerEvents = "all";
+        pauseMenu.style.zIndex = 999999;
+        pauseMenu.style.pointerEvents = "auto";
+        pauseMenu.style.cursor = "default";
     }
 }
 
@@ -679,7 +653,7 @@ var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
 var moveRight = false;
-var moveSpeed = 4;
+var moveSpeed = 0.75;
 var flashLightDistance = 10;
 
 let previousMouseX = window.innerWidth / 2; // Start in the middle
@@ -783,9 +757,6 @@ window.addEventListener('keydown', function(event) {
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
-        case 'p': console.log(playerParent.position); break;
-        // case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
-        case 'r': resetLevel(); break;
         case 'Escape': togglePauseMenu(); break;
         // case 'x': flashTimeout = 99; darknessTimeout=10; break;
     }purgatoryupdateRunSound();

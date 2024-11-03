@@ -29,7 +29,6 @@
         z-index: 1999; 
       }
 
-      /* "You Died" message */
       #game-over-message {
         position: absolute;
         top: 40%;
@@ -62,17 +61,16 @@
       #pause-menu{
         width: 100vw;
         height: 100vh;
-        opacity: 0;
+        opacity: 1;
         background-color: rgba(0, 0, 0, 0.8);
-        pointer-events:none;
+        /* pointer-events:none; */
         position: absolute;
-        z-index: 999999;
+        z-index: -999999;
         display: flex;
         flex-direction: column;
         gap: 10px;
         align-items: center;
         justify-content: center;
-        cursor:auto;
       }
 
       .pause-buttons{
@@ -85,26 +83,11 @@
         text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
         border: none;
         background: none;
-        pointer-events:inherit;
+        pointer-events: inherit;
         cursor: pointer;
       }
-      #game-over-message2 {
-            position: absolute;
-            top: 70%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: auto;
-            height: auto;
-            color: white;
-            font-size: 2rem; /* Adjust size as needed */
-            text-align: center;
-            opacity: 0; /* Start invisible */
-            z-index: 1000;
-            transition: opacity 1s ease-in-out;
-            text-shadow: 1px 1px 3px #000; /* Add shadow for readability */
-        }
 
-      #heart-container {
+    #heart-container {
       position: absolute;
       top: 10px;
       left: 10px;
@@ -127,18 +110,18 @@
         text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
       }
 
-    #plot-page{
+      #plot-page{
         width: 100vw;
         height: 100vh;
         opacity: 0;
         background-color: rgba(0, 0, 0, 1);
         position: absolute;
-        z-index: 999999;
+        z-index: 99999;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        cursor: auto;
+        cursor: none;
         transition: opacity 2s;
       }
 
@@ -152,12 +135,7 @@
   </div>
   <body>
 
-    <div id="chest-text" style="opacity: 0; position: absolute; top: 50px; left: 50%; transform: translateX(-50%); color: white; font-size: 20px;">
-      Chest interaction message
-    </div>
-    <div id="game-over-message2" style="opacity: 0; transition: opacity 0.5s;">You Died. Press R to restart.</div>
-
-    
+    <div id="chest-text" style="opacity: 0; position: absolute; top: 50px; left: 50%; transform: translateX(-50%); color: white; font-size: 20px;"></div>
     <p id="object-interact">Press 'E' to Interact</p>
     <div id="item-text-container">
       <p id="item-text"></p>

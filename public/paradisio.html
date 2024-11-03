@@ -12,7 +12,8 @@
         width: 100%;
         height: 100%;
       }
-      * {
+
+      *{
         cursor: none;
       }
 
@@ -25,11 +26,10 @@
         pointer-events: none;
         background: radial-gradient(circle, rgba(255, 0, 0, 0) 60%, rgba(139, 0, 0, 1) 100%);
         transition: opacity 0.5s;
-        opacity: 0; /* Starts off invisible */
-        z-index: 1999; /* Make sure it's on top */
+        opacity: 0; 
+        z-index: 1999; 
       }
 
-      /* "You Died" message */
       #game-over-message {
         position: absolute;
         top: 40%;
@@ -80,17 +80,16 @@
       #pause-menu{
         width: 100vw;
         height: 100vh;
-        opacity: 0;
+        opacity: 1;
         background-color: rgba(0, 0, 0, 0.8);
-        pointer-events:none;
+        /* pointer-events:none; */
         position: absolute;
-        z-index: 999999;
+        z-index: -999999;
         display: flex;
         flex-direction: column;
         gap: 10px;
         align-items: center;
         justify-content: center;
-        cursor:auto;
       }
 
       .pause-buttons{
@@ -103,7 +102,7 @@
         text-shadow: 1px 1px 3px #000, -1px 1px 3px #000, -1px -1px 3px #000, 1px 1px 3px #000;
         border: none;
         background: none;
-        pointer-events:inherit;
+        pointer-events: inherit;
         cursor: pointer;
       }
 
@@ -135,6 +134,7 @@
       #game-finished-page{
         width: 100vw;
         height: 100vh;
+        pointer-events: none;
         opacity: 0;
         background-color: rgba(0, 0, 0, 1);
         position: absolute;
@@ -151,12 +151,12 @@
         opacity: 0;
         background-color: rgba(0, 0, 0, 1);
         position: absolute;
-        z-index: 999999;
+        z-index: 99999;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        cursor: auto;
+        cursor: none;
         transition: opacity 2s;
       }
     </style>

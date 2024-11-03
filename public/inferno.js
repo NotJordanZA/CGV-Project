@@ -541,12 +541,14 @@ function interactWithObject(){
 
 
 function togglePauseMenu(){
-    if(pauseMenu.style.opacity == 1){
-        pauseMenu.style.opacity = 0;
+    if(pauseMenu.style.zIndex > 0){
+        pauseMenu.style.zIndex = -999999;
         pauseMenu.style.pointerEvents = "none";
+        pauseMenu.style.cursor = "none";
     }else{
-        pauseMenu.style.opacity = 1;
-        pauseMenu.style.pointerEvents = "all";
+        pauseMenu.style.zIndex = 999999;
+        pauseMenu.style.pointerEvents = "auto";
+        pauseMenu.style.cursor = "default";
     }
 }
 

@@ -37,6 +37,18 @@ export class item {
                 this.itemModel.scale.set(20, 20, 20);
                 this.itemModel.translateY(-20);
             }
+            if (this.modelPath.includes("musicBox.glb")){
+                this.itemModel.scale.set(5, 5, 5);
+                this.itemModel.translateY(-5);
+            }
+            if (this.modelPath.includes("halo.glb")){
+                this.itemModel.scale.set(15, 15, 15);
+                this.itemModel.translateY(-15);
+            }
+            if (this.modelPath.includes("feather.glb")){
+                this.itemModel.scale.set(0.6, 0.6, 0.6);
+                // this.itemModel.translateY(-15);
+            }
             this.itemGroup.add(this.itemModel);
         }, undefined, (error) => {
             console.error(`Error loading model: ${error}`, this.modelPath);

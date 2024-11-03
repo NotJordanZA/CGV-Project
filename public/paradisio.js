@@ -187,23 +187,23 @@ function setupLevel(level) {
     flashLight.intensity = levelConfig.flashLightPower;
     var item1 = new item(
         scene,
-        "./assets/level3/drop.glb",
+        "./assets/level3/feather.glb",
         125, 0, 300,
-        "A single metallic tear with a blue shine.\nOn the side is the initial L inscribed.\nIs this\n...for me?",
+        "A glowing, white feather from an angel or divine being.\n“Somebody left this for me.\nI feel… warm”",
         new THREE.Color(0xffe600)
     );
     var item2 = new item(
         scene,
-        "./assets/level3/heart.glb",
+        "./assets/level3/halo.glb",
         -420, 0, -238,
-        "My Heart!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+        "A golden halo that has been snapped in half.\nThis must have belonged to a fallen angel.\n“This was Liora’s... I need to give it back to her”",
         new THREE.Color(0x0051ff)
     );
     var item3 = new item(
         scene,
-        "./assets/level3/key.glb",
+        "./assets/level3/musicBox.glb",
         55, 0, -350,
-        "An ornate silver key with a lace tag reading “Mine now.”\nThis is the key for Liora’s Music Box.\nIs that my handwriting on the tag?",
+        "A music box with a familiar song resonating from within.\nThis was Liora's most prized possession.\nI'd love to get another chance to listen to this with her...",
         new THREE.Color(0xbf00ff)
     );
     items.push(item1);
@@ -333,29 +333,30 @@ audioLoader.load('./assets/soundeffects/chestsound.mp3', function(buffer) {
     console.error('Error loading chest sound:', error);
 });
 //key sound
-const parkeySound = new THREE.Audio(listener);
-audioLoader.load('./assets/soundeffects/keysound.mp3', (buffer) => {
-    parkeySound.setBuffer(buffer);
-    parkeySound.setVolume(2.0);
+const haloSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/halo.mp3', (buffer) => {
+    haloSound.setBuffer(buffer);
+    haloSound.setVolume(1);
+    haloSound.setPlaybackRate(1.5);
 }, undefined, (error) => {
     console.error('Error loading key sound:', error);
 });
 //water drop sound
-const pardropSound = new THREE.Audio(listener);
-audioLoader.load('./assets/soundeffects/drop-sound.mp3', function(buffer) {
-    pardropSound.setBuffer(buffer);
-    pardropSound.setLoop(false);
-    pardropSound.setVolume(2.0);
+const featherSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/wing.mp3', function(buffer) {
+    featherSound.setBuffer(buffer);
+    featherSound.setLoop(false);
+    featherSound.setVolume(3.0);
 }, undefined, (error) => {
     console.error('Error loading drop sound:', error);
 });
 
 //heart/victory sound
-const parheartSound = new THREE.Audio(listener);
-audioLoader.load('./assets/soundeffects/heartvictorysound.mp3', function(buffer) {
-    parheartSound.setBuffer(buffer);
-    parheartSound.setLoop(false);
-    parheartSound.setVolume(0.8);
+const musicBoxSound = new THREE.Audio(listener);
+audioLoader.load('./assets/soundeffects/record-sound.mp3', function(buffer) {
+    musicBoxSound.setBuffer(buffer);
+    musicBoxSound.setLoop(false);
+    musicBoxSound.setVolume(1.5);
 }, undefined, (error) => {
     console.error('Error loading heart/victory sound:', error);
 });
@@ -507,7 +508,7 @@ function displayItemMessage(item) {
 
 function fallingPlayer() {
     if (fallJumping) {
-        playerModel.translateY(jumpSpeed);
+        playerParent.translateY(jumpSpeed);
         jumpSpeed -= 0.05;
         
         if (jumpSpeed <= 0) {
@@ -516,7 +517,7 @@ function fallingPlayer() {
         }
     } else {
         fallSpeed -= 0.05;
-        playerModel.translateY(fallSpeed);
+        playerParent.translateY(fallSpeed);
     }
 }
 
@@ -533,18 +534,18 @@ function interactWithObject(){
 
         const modelPath = currentItem.modelPath.toLowerCase();
 
-        if (modelPath.includes("key")) {
-            if (!parkeySound.isPlaying) {
-                parkeySound.play();
+        if (modelPath.includes("halo")) {
+            if (!haloSound.isPlaying) {
+                haloSound.play();
             }
-        } else if (modelPath.includes("heart")) {
-            if (!parheartSound.isPlaying) {
-                parheartSound.play();
+        } else if (modelPath.includes("music")) {
+            if (!musicBoxSound.isPlaying) {
+                musicBoxSound.play();
             }
     
-}else if (modelPath.includes("drop")) {
-    if (!pardropSound.isPlaying) {
-        pardropSound.play();
+}else if (modelPath.includes("feather")) {
+    if (!featherSound.isPlaying) {
+        featherSound.play();
     }
 
 } 
@@ -557,12 +558,14 @@ function interactWithObject(){
 }
 
 function togglePauseMenu(){
-    if(pauseMenu.style.opacity == 1){
-        pauseMenu.style.opacity = 0;
+    if(pauseMenu.style.zIndex > 0){
+        pauseMenu.style.zIndex = -999999;
         pauseMenu.style.pointerEvents = "none";
+        pauseMenu.style.cursor = "none";
     }else{
-        pauseMenu.style.opacity = 1;
-        pauseMenu.style.pointerEvents = "all";
+        pauseMenu.style.zIndex = 999999;
+        pauseMenu.style.pointerEvents = "auto";
+        pauseMenu.style.cursor = "default";
     }
 }
 
