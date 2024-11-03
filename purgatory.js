@@ -65,7 +65,7 @@ camera.lookAt(0, 0, 0); // Aim the camera at the origin (where the cube is)
 
 // Map configuration
 var mapRenderer = new THREE.WebGLRenderer({ alpha: true });
-mapRenderer.setSize(300, 300); 
+mapRenderer.setSize(400, 400); 
 mapRenderer.domElement.style.position = 'absolute';
 mapRenderer.domElement.style.bottom = '0';
 mapRenderer.domElement.style.right = '5px';
@@ -91,8 +91,9 @@ for (var i = 0; i < pathPoints.length; i++) {
 }
 var pathGeometry = new THREE.BufferGeometry();
 pathGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-var pathMaterial = new THREE.LineDashedMaterial({ color: 0xdb9d00, dashSize: 3, gapSize: 3 });
+var pathMaterial = new THREE.LineDashedMaterial({ color: 0xdb9d00, dashSize: 2, gapSize: 2 });
 var pathLine = new THREE.Line(pathGeometry, pathMaterial);
+pathLine.position.set(0, 0, +27);
 pathLine.computeLineDistances();
 
 // Level Configurations
@@ -325,6 +326,16 @@ gltfLoader.load('./assets/purgatory/cgv-purgatory-map-baked-mesh.glb', (gltf) =>
     floorBoundingBox.setFromObject(purgatoryMap);
 }, undefined, (error) => {
     console.error('An error happened while loading the purgatoryMap:', error);
+});
+
+gltfLoader.load('./assets/purgatory/cgv-purgatory-map-chests.glb', (gltf) => {
+    purgatoryChests = gltf.scene;
+    purgatoryChests.rotation.y = -Math.PI / 2;
+    purgatoryChests.scale.set(50, 50, 50);
+    purgatoryChests.position.set(0, -10, 0); 
+    scene.add(purgatoryChests);
+}, undefined, (error) => {
+    console.error('An error happened while loading the purgatory chests:', error);
 });
 
 gltfLoader.load('./assets/purgatory/cgv-purgatory-walls.glb', (gltf) => {
@@ -749,16 +760,12 @@ window.addEventListener('mousemove', function(event) {
 // var darknessTimeout = 100;
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
-        case '1': goToLevel(0); break; // Move to Level 1
-        case '2': goToLevel(1); break; // Move to Level 2
-        case '3': goToLevel(2); break; // Move to Level 3
         case 'w': moveForward = true; break;
         case 's': moveBackward = true; break;
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
         case 'Escape': togglePauseMenu(); break;
-        // case 'x': flashTimeout = 99; darknessTimeout=10; break;
     }purgatoryupdateRunSound();
 });
 
@@ -774,7 +781,6 @@ window.addEventListener('keyup', function(event) {
 var playerModelBoundingBox = new THREE.Box3();
 var chestsBoundingBoxes = [];
 var wallsBoundingBoxes = [];
-var ghostBoundingBoxes = [];
 
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
@@ -786,15 +792,6 @@ function updateBoundingBoxes() {
             if (child.isMesh) {
                 const chestBoundingBox = new THREE.Box3().setFromObject(child);
                 chestsBoundingBoxes.push(chestBoundingBox);
-            }
-        });
-    }
-
-    if (purgatoryGhosts && purgatoryGhostsBoundingBox.length < 1000) {
-        purgatoryGhosts.traverse((child) => {
-            if (child.isMesh) {
-                const chestBoundingBox = new THREE.Box3().setFromObject(child);
-                purgatoryGhostsBoundingBox.push(purgatoryGhostsBoundingBox);
             }
         });
     }
@@ -937,9 +934,6 @@ window.addEventListener('resize', function() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-var resetLevelTimeout = 10;
-var playedDeathPopup = false;
-var deathSoundPlayed = false;
 var atStart = true;
 
 function render() {
@@ -950,7 +944,7 @@ function render() {
     if(playerItemCount == itemCount){
         atChest = false;
         atItem = false;
-        goToLevel(1);
+        goToLevel(2);
     }
     if (atChest || atItem) {
         interactMessage.style.opacity = 1;
@@ -962,50 +956,6 @@ function render() {
         mixer.update(delta); // Update the animation mixer
     }
 
-    // if (flashTimeout > 100) {
-    //     darknessTimeout = 100;
-    //     if (flickerTimeout === 0 && Math.random() < 0.006){
-    //         flickerTimeout = 30;
-    //     }
-    //     flashTimeout -= 0.9;
-    //     bounceTimeout -= 0.00018;
-    // }else{
-    //     darknessTimeout -= 0.1;
-    // }
-    // if (flickerTimeout > 0){
-    //     flickerTimeout -= 1;
-    //     switch (flickerTimeout){
-    //         case 25:
-    //             flashLight.intensity = 5000;
-    //             flashLightBounce.intensity = 100;
-    //         break;
-    //         case 15:
-    //             flashLight.intensity = 1;
-    //             flashLightBounce.intensity = 1;
-    //         break;
-    //         case 5:
-    //             flashLight.intensity = 5000;
-    //             flashLightBounce.intensity = 100;
-    //         break;
-    //         case 1:
-    //             flashLight.intensity = 1;
-    //             flashLightBounce.intensity = 1;
-    //         break;
-    //     }
-    // }
-    // else {
-    //     flashLight.intensity = levelConfig.flashLightPower;
-    //     flashLightBounce.intensity = 100;
-    // }
-
-
-    // if (darknessTimeout <= 0) {
-    //     showGameOverScreen();
-    //     flashTimeout = 0;
-    //     bounceTimeout = 0;
-    //     resetLevelTimeout -= 0.03;
-    // }else{
-
     if(hearts > 0){
         updatePlayerPosition();
         updateBoundingBoxes();
@@ -1015,10 +965,7 @@ function render() {
         purgatoryplayObjectSoundIfNearItem();
         purgatoryplayChestSoundIfNearChest();
     }
-        //   if(purgatoryGhosts){
-        //      moveGhost();
-        //   }
-    // }
+
     for(i = 0; i< items.length; i++){
         items[i].itemGroup.rotation.y+=0.025;
     }

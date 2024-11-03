@@ -597,18 +597,11 @@ function updateinfernoRunningSound() {
 }
 window.addEventListener('keydown', function(event) {
     switch(event.key) {
-        case '1': goToLevel(0); break; // Move to Level 1
-        case '2': goToLevel(1); break; // Move to Level 2
-        case '3': goToLevel(2); break; // Move to Level 3
         case 'w': moveForward = true; break;
         case 's': moveBackward = true; break;
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
-        case 'p': console.log(playerParent.position); break;
-        case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
-        case 'r': resetLevel(); break;
-        case 'x': flashTimeout = 99; darknessTimeout=10; break;
         case 'Escape': togglePauseMenu(); break;
     }updateinfernoRunningSound(); //sound
 });
