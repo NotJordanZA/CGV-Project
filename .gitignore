@@ -21,3 +21,8 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# gltfs
+cgv-inferno-map-baked-mesh.glb
+cgv-purgatory-map-baked-mesh.glb
+cgv-purgatory-map-baked-mesh.glb
