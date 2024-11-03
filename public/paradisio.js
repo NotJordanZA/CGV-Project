@@ -770,7 +770,7 @@ function handleCollisions(direction) {
 
     playerModel.rotation.y = playerAngle;
     // Update the bounding box after the attempted movement
-    playerModelBoundingBox.setFromObject(playerModel);
+    playerModelBoundingBox.setFromObject(playerParent);
 
     // Check if the player has collided with the wall or a chest, revert position if true
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
