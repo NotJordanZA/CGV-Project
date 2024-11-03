@@ -151,7 +151,7 @@ function displayPlotScreen(){
 }
 
 function resetLevel() {
-    playerModel.position.copy(initialModelPosition);
+    playerParent.position.copy(initialModelPosition);
     camera.position.copy(initialCameraPosition);
     camera.lookAt(0, 0, 0);
 
@@ -404,9 +404,8 @@ flashLight.target = flashLightTarget;
 
 // Check if player is near chest
 function checkAtChest() {
-    var x = playerModel.position.x;
-    var z = playerModel.position.z;
-
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
     atChest = false;
 
     for (var i = 0; i < chests.length; i++) {
@@ -422,7 +421,7 @@ function checkAtChest() {
 let infObjectSoundPlayed = false;
 
 function playObjectSoundIfNearItem() {
-    const playerPosition = playerModel.position;
+    const playerPosition = playerParent.position;
     const distanceThreshold = 100; //how close the player needs to be to trigger the sound
     let isNearItem = false;
 
@@ -454,7 +453,7 @@ function playObjectSoundIfNearItem() {
 let chestPlayStates = chests.map(() => ({ isPlayed: false }));
 
 function playChestSoundIfNearChest() {
-    const playerPosition = playerModel.position;
+    const playerPosition = playerParent.position;
     const chestDistanceThreshold = 70;
 
     chests.forEach((chest, index) => {
@@ -472,8 +471,8 @@ function playChestSoundIfNearChest() {
 
 // Check if player is near item
 function checkAtItem() {
-    var x = playerModel.position.x;
-    var z = playerModel.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atItem = false;
 
@@ -604,7 +603,7 @@ window.addEventListener('keydown', function(event) {
         case 'a': moveLeft = true; break;
         case 'd': moveRight = true; break;
         case 'e': interactWithObject(); break;
-        case 'p': console.log(playerModel.position); break;
+        case 'p': console.log(playerParent.position); break;
         case 'l': flashTimeout = 5000; bounceTimeout = 100; break;
         case 'r': resetLevel(); break;
         case 'x': flashTimeout = 99; darknessTimeout=10; break;
@@ -652,9 +651,9 @@ function updateBoundingBoxes() {
 function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
         if (playerModelBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
-            var x = playerModel.position.x;
-            var y = playerModel.position.y;
-            var z = playerModel.position.z;
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -668,9 +667,9 @@ function checkChestCollisions() {
 function checkInvisibleWallsCollisions() {
     for(let i = 0; i< wallsBoundingBoxes.length; i++){
         if (playerModelBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
-            var x = playerModel.position.x;
-            var y = playerModel.position.y;
-            var z = playerModel.position.z;
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -706,13 +705,13 @@ function handleCollisions(direction) {
     playerModel.rotation.y = playerAngle;
 
     // Update the bounding box after the attempted movement
-    playerModelBoundingBox.setFromObject(playerModel);
+    playerModelBoundingBox.setFromObject(playerParent);
 
     // Check if the player has collided with the wall or a chest
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {
         // If collided, revert to the previous position
         // console.log("I ams stuck");
-        playerModel.position.copy(oldPlayerModelPosition);
+        playerParent.position.copy(oldPlayerModelPosition);
         camera.position.copy(oldCameraPosition);
          //collision sound
          //Play a random wall collision sound
@@ -753,7 +752,7 @@ window.addEventListener('mousemove', function(event) {
 
 
 function updatePathTrail() {
-    pathPoints.push(new THREE.Vector3(playerModel.position.x/20, 0, playerModel.position.z/20));
+    pathPoints.push(new THREE.Vector3(playerParent.position.x/20, 0, playerParent.position.z/20));
     pathGeometry.setFromPoints(pathPoints);
     pathLine.computeLineDistances();
 }
@@ -781,6 +780,7 @@ function updatePlayerPosition() {
     if (moveRight) {
         handleCollisions('right');
     }
+    
 }
 
 // Update resolution on window resize

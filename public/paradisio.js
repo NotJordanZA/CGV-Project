@@ -673,7 +673,7 @@ var wallsBoundingBoxes = [];
 // Update bounding boxes in the render loop
 function updateBoundingBoxes() {
     // Update player's bounding box
-    playerModelBoundingBox.setFromObject(playerModel);
+    playerModelBoundingBox.setFromObject(playerParent);
 
     if (paridisioChests && chestsBoundingBoxes.length < 1000) {
         paridisioChests.traverse((child) => {
@@ -770,7 +770,7 @@ function handleCollisions(direction) {
 
     playerModel.rotation.y = playerAngle;
     // Update the bounding box after the attempted movement
-    playerModelBoundingBox.setFromObject(playerModel);
+    playerModelBoundingBox.setFromObject(playerParent);
 
     // Check if the player has collided with the wall or a chest, revert position if true
     if (checkChestCollisions() || checkInvisibleWallsCollisions()) {

@@ -72,8 +72,8 @@ window.addEventListener('mousemove', function(event) {
     flashHolder.position.z = flashLightDistance * Math.sin(angle);
     flashHolder.position.y = 2; 
 
-    flashLightTarget.position.x = playerModel.position.x + 10 * flashLightDistance * Math.cos(angle);
-    flashLightTarget.position.z = playerModel.position.z + 10 * flashLightDistance * Math.sin(angle);
+    flashLightTarget.position.x = playerParent.position.x + 10 * flashLightDistance * Math.cos(angle);
+    flashLightTarget.position.z = playerParent.position.z + 10 * flashLightDistance * Math.sin(angle);
     flashLightTarget.position.y = 2;
 
     // Adjust player orientation to match flashlight direction, with a 45-degree correction
@@ -253,7 +253,7 @@ function displayChestMessage() {
 
 
 function resetLevel() {
-    playerModel.position.copy(initialPlayerModelPosition);
+    playerParent.position.copy(initialPlayerModelPosition);
     document.getElementById('game-over-message2').style.opacity = '0';
     camera.position.copy(initialCameraPosition);
 
@@ -535,8 +535,8 @@ flashLight.target = flashLightTarget;
 
 // Check if player is near chest
 function checkAtChest() {
-    var x = playerModel.position.x;
-    var z = playerModel.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atChest = false;
 
@@ -594,8 +594,8 @@ function checkAtGhost() {
 
 // Check if player is near item
 function checkAtItem() {
-    var x = playerModel.position.x;
-    var z = playerModel.position.z;
+    var x = playerParent.position.x;
+    var z = playerParent.position.z;
 
     atItem = false;
 
@@ -860,9 +860,9 @@ function checkGhostCollisions() {
 function checkChestCollisions() {  
     for (let i = 0; i < chestsBoundingBoxes.length; i++) {
         if (playerModelBoundingBox.intersectsBox(chestsBoundingBoxes[i])) {
-            var x = playerModel.position.x;
-            var y = playerModel.position.y;
-            var z = playerModel.position.z;
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -876,9 +876,9 @@ function checkChestCollisions() {
 function checkInvisibleWallsCollisions() {
     for(let i = 0; i< wallsBoundingBoxes.length; i++){
         if (playerModelBoundingBox.intersectsBox(wallsBoundingBoxes[i])) {
-            var x = playerModel.position.x;
-            var y = playerModel.position.y;
-            var z = playerModel.position.z;
+            var x = playerParent.position.x;
+            var y = playerParent.position.y;
+            var z = playerParent.position.z;
             if(x<=30 && x>=-30 && z<=30 && z>=-30){
                 return false;
             }
@@ -914,13 +914,13 @@ function handleCollisions(direction) {
     playerModel.rotation.y = playerAngle;
 
     // Update the bounding box after the attempted movement
-    playerModelBoundingBox.setFromObject(playerModel);
+    playerModelBoundingBox.setFromObject(playerParent);
 
     // Check if the player has collided with the wall or a chest
     if (checkChestCollisions() || checkInvisibleWallsCollisions() || checkGhostCollisions()) {
         // If collided, revert to the previous position
         // console.log("I ams stuck");
-        playerModel.position.copy(oldPlayerModelPosition);
+        playerParent.position.copy(oldPlayerModelPosition);
         camera.position.copy(oldCameraPosition);
     }else{
         updatePathTrail();
@@ -929,7 +929,7 @@ function handleCollisions(direction) {
 
 // Update minimap
 function updatePathTrail() {
-    pathPoints.push(new THREE.Vector3(playerModel.position.x/15, 0, playerModel.position.z/15));
+    pathPoints.push(new THREE.Vector3(playerParent.position.x/15, 0, playerParent.position.z/15));
     pathGeometry.setFromPoints(pathPoints);
     pathLine.computeLineDistances();
 }
