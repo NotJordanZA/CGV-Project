@@ -1,4 +1,5 @@
-import * as THREE from 'three';
+import * as THREE from "./three.module.js"
+import { GLTFLoader } from './loaders/GLTFLoader.js';
 
 // Level 2 configuration with purgatory environment tones
 export const level2Config = {

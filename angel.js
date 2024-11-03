@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from "./three.module.js";
+import { GLTFLoader } from './loaders/GLTFLoader.js';
 
 export class biblicalAngel {
     constructor(scene, startPoint, endPoint) {

@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from "./three.module.js";
+import { GLTFLoader } from './loaders/GLTFLoader.js';
 import { level1Config } from './level1.js';
 import { level2Config } from './level2.js';
 import { level3Config } from './level3.js';

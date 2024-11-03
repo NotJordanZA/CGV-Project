@@ -1,6 +1,6 @@
 // levels/level1.js
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from "./three.module.js"
+import { GLTFLoader } from './loaders/GLTFLoader.js';
 
 export const level1Config = {
     levelNumber: 1,
