@@ -838,7 +838,8 @@ function displayGameFinishedScreen(){
             "Are you destined for returnal… or are you bound for Inferno?\n\n\n\n" +
             "Well done! Your soul is absconded; you took " + millisToMinutesAndSeconds(totalTime) + " to traverse the afterlife!";
         gameFinishedScreen.style.opacity = 1;
-        gameFinishedScreen.style.cursor = "auto";
+        gameFinishedScreen.style.cursor = "default";
+        gameFinishedScreen.style.pointerEvents = "auto";
     }, 10000);  
 }
 
