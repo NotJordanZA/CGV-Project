@@ -1,5 +1,9 @@
 # CGV-Project
 
+## Link To Play
+
+[Play Dante's Returnal!](https://lamp.ms.wits.ac.za/home/srenderbender/)
+
 ## Installation
 
 1. Clone this repository:
